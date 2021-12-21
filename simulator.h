@@ -17,15 +17,6 @@
 #define MONITOR_RES 256
 
 typedef enum {data, instruction, irq2, disk} Mode;
-int pc = 0;
-int IORegister[NUM_OF_IOREGISTERS];
-int MEM[MAX_SIZE];
-int R[16];
-int IN_INTERRUPT;
-const char *inst_filename = "imemin.txt";
-const char *data_filename = "dmemin.txt";
-int** DISK_IO;
-int** monitor_frame; 
 
 
 typedef struct instruction {
@@ -59,7 +50,7 @@ int run_command(Instruction instruction);
 void run_arithmetic(Instruction instruction, int id);
 void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
-void run_IOregister_operations(Instruction instruction , int id);
+void run_IOregister_operation(Instruction instruction , int id);
 void update_irq2(int cycle);
 
 
