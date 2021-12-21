@@ -4,3 +4,5 @@ simulator.exe
 a.exe
 diskin.txt
 irq2in.txt
+dmemin.txt
+imemin.txt
