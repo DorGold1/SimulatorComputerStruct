@@ -1,31 +1,40 @@
 #include "simulator.h"
 
 int main() {
-    int i;
-    const char *filename = "imemin.txt";
-    FILE *fp = fopen(filename,"r");
-	Instruction **cmdLst = calloc(MAX_INSTRUCTIONS,sizeof(Instruction *));
-    for(i=0; i<MAX_INSTRUCTIONS; i++) {
+    int i, res;
+    FILE *fp;
+    fp = fopen(inst_filename,"r");
+	cmdLst = calloc(MAX_SIZE,sizeof(Instruction *));
+    for(i=0; i<MAX_SIZE; i++) {
         cmdLst[i] = (Instruction *)malloc(sizeof(Instruction *));
     }
-    read_instructions(fp,INSTRUCTION_LEN,cmdLst);
+    read_from_file(fp, INSTRUCTION_LEN, false);
+	fclose(fp);
+    fp = fopen(data_filename,"r");
+	read_from_file(fp, DATA_LEN, true);
+    fclose(fp);
     int a=3;
-      
 }
 
-int read_instructions(FILE *fp, int len, Instruction **cmdLst) {
+int read_from_file(FILE *fp, int len, bool readData) {
     int i = 0;
     char *line = malloc(len*sizeof(char));
-    while (fgets(line, len, fp)) {
+    while(fgets(line, len, fp)) {
         /* note that fgets don't strip the terminating \n, checking its
            presence would allow to handle lines longer that sizeof(line) */
         if (strcmp(line,"\n") == 0) {
             continue;
         }
-        add_to_cmd_lst(cmdLst[i++], line);
+        if (readData) {
+			add_to_data_lst(&MEM[i++], line);
+        }
+		else {
+            add_to_cmd_lst(cmdLst[i++], line);
+        }
     }
-	return 1;
+    return 1;
 }
+
 
 int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
 	char tmp;
@@ -51,11 +60,11 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
     return 1;
 }
 
-char cut_string_by_index(char *str, int i) {
-	char tmp = str[i];
-    str[i] = '\0';
-    return tmp;
+
+int add_to_data_lst(int *mem, char *data) {
+    *mem = (int)strtol(data, NULL, 16);
 }
+
 
 void run_add_or_sub(Instruction instruction, int id){
     int a = 1;
