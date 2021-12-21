@@ -4,6 +4,10 @@
 
 #define INSTRUCTION_LEN 13
 #define MAX_INSTRUCTIONS 4096
+#define NUM_OF_IOREGISTERS 23
+
+int pc = 0;
+int IORegister[NUM_OF_IOREGISTERS];
 
 typedef struct instruction {
     short op;
