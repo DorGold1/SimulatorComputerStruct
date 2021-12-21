@@ -11,7 +11,7 @@
 #define DATA_LEN 9
 #define MAX_DATA 4096
 #define MAX_INSTRUCTIONS 4096
-#define NUM_OF_IOREGISTERS 23
+#define NUM_IOREGISTERS 23
 #define NUM_SECTORS 128
 #define SECTOR_SIZE 128
 #define MONITOR_RES 256
@@ -29,16 +29,21 @@ typedef struct instruction {
     int immediate2;
 } Instruction;
 
-
 Instruction **cmdLst;
+
+//Registers, Memory, IO Devices
+int R[16];
+int IORegister[NUM_IOREGISTERS];
 int MEM[MAX_DATA];
+int PC = 0;
+int **diskIO;
+uint8_t **monitorFrame;
 int *irq2Lst;
 int irq2Index = 0;
-int **diskIO;
-uint8_t **monitor_frame;
-int pc = 0;
-int IORegister[NUM_OF_IOREGISTERS];
-int R[16];
+int inInterrupt = 0;
+
+
+//Filenames
 const char *inst_filename = "imemin.txt";
 const char *data_filename = "dmemin.txt";
 const char *irq2_filename = "irq2in.txt";
@@ -52,6 +57,11 @@ void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
 void run_IOregister_operation(Instruction instruction , int id);
 void update_irq2(int cycle);
+void update_irqs_state(int *irqState);
+void interrupt_handler(int *irqState);
+void diskIO_handler();
+void timer_handler();
+
 
 
 //Utils Func Declarations
