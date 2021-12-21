@@ -38,7 +38,7 @@ int main() {
     //Init the rest of the IO devices
     monitor_frame = malloc(MONITOR_RES * sizeof(uint8_t *));
     for (i=0; i<MONITOR_RES; i++) {
-		monitor_frame[i] = calloc(SECTOR_SIZE, sizeof(uint8_t));
+		monitor_frame[i] = calloc(MONITOR_RES, sizeof(uint8_t));
     }
     int a=3;
 }
