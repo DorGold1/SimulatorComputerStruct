@@ -40,16 +40,16 @@ int main() {
     for (i=0; i<MONITOR_RES; i++) {
 		monitorFrame[i] = calloc(MONITOR_RES, sizeof(uint8_t));
     }
-    int a=3;
+    res = main_loop();
 }
 
 
 int main_loop() {
-    int oldPC, cycles = 0, irqState[3];
+    int oldPC, cycles = 0;
 	while(cmdLst[PC]) {
         //Handle interrupts
         update_irq2(cycles);
-        interrupt_handler(irqState);
+        interrupt_handler();
 
         //Handle disk and timer
         diskIO_handler();
@@ -65,6 +65,7 @@ int main_loop() {
         //Update cycle count
         cycles+=1;
     }
+    return EXIT_SUCCESS;
 }
 
 
@@ -76,14 +77,8 @@ void update_irq2(int cycle) {
 }
 
 
-void update_irqs_state(int *irqState) {
-    irqState[0] = IORegister[0] & IORegister[3];
-    irqState[1] = IORegister[1] & IORegister[4];
-    irqState[2] = IORegister[2] & IORegister[5];
-}
-
-
-void interrupt_handler(int *irqState) {
+void interrupt_handler() {
+    int irqState[3];
     update_irqs_state(irqState);
     if((irqState[0] == 1) && (inInterrupt == 0)) {
         inInterrupt = 1;
@@ -101,6 +96,13 @@ void interrupt_handler(int *irqState) {
         inInterrupt = 1;
         //do irq2 interrupt..........
     }
+}
+
+
+void update_irqs_state(int *irqState) {
+    irqState[0] = IORegister[0] & IORegister[3];
+    irqState[1] = IORegister[1] & IORegister[4];
+    irqState[2] = IORegister[2] & IORegister[5];
 }
 
 

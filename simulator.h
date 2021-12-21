@@ -18,7 +18,6 @@
 
 typedef enum {data, instruction, irq2, disk} Mode;
 
-
 typedef struct instruction {
     short op;
     short rd;
@@ -42,27 +41,24 @@ int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
 
-
 //Filenames
 const char *inst_filename = "imemin.txt";
 const char *data_filename = "dmemin.txt";
 const char *irq2_filename = "irq2in.txt";
 const char *disk_filename = "diskin.txt";
 
-
 //Func Declarations
+int main_loop();
+void update_irq2(int cycle);
+void update_irqs_state(int *irqState);
+void interrupt_handler();
+void diskIO_handler();
+void timer_handler();
 int run_command(Instruction instruction);
 void run_arithmetic(Instruction instruction, int id);
 void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
 void run_IOregister_operation(Instruction instruction , int id);
-void update_irq2(int cycle);
-void update_irqs_state(int *irqState);
-void interrupt_handler(int *irqState);
-void diskIO_handler();
-void timer_handler();
-
-
 
 //Utils Func Declarations
 int read_from_file(FILE *fp, int len, Mode mode);
