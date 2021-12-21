@@ -68,33 +68,95 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
     return 1;
 }
 
+void check_for_interrupt(int *triggers){
+    triggers[0] = IORegister[0] & IORegister[3];
+    triggers[1] = IORegister[1] & IORegister[4];
+    triggers[2] = IORegister[2] & IORegister[5];
+}
+
 
 int add_to_data_lst(int *mem, char *data) {
     *mem = (int)strtol(data, NULL, 16);
 }
 
 
-
 int main_loop(){
-    int i=0;
-	while(cmdLst[i])
+    int triggers[3];
+    int timer = 0;
+    int disk_IO = 0;
+    int Disk_cycle_timer;
+    int type_of_operation;
+	while(cmdLst[pc]){
+        update_irq2(timer);
+        check_for_interrupt(triggers);
+        if((triggers[0] == 1) & (IN_INTERRUPT == 0)){
+            IN_INTERRUPT = 1;
+            IORegister[7] = pc; //SAVE ADDRESS FOR RETI
+            pc = IORegister[6]; //GO TO INTERRUPT
+            
+            
+            //do timer interrupt
+        }
+        if((triggers[1] == 1) & (IN_INTERRUPT == 0)){
+            IN_INTERRUPT = 1;
+            //do hard disk interrupt....
+        }
+         if((triggers[2] == 1) & (IN_INTERRUPT == 0)){
+            IN_INTERRUPT = 1;
+            //do irq2 interrupt..........
+        }
+        if((IORegister[14] != 0) & IORegister[17] == 0){ //NEED TO WRITE TO IO DEVICE
+            Disk_cycle_timer = 0; //INITATE TIMER
+            type_of_operation = IORegister[14];
+            if(type_of_operation == 1){
+                //READ FROM DEVICE...........
+            }
+            else{
+                //WRITE TO DEVICE............
+            }
+        }
+        ///////CHECK FOR TIMER INTERRUPT.......
+        if(IORegister[11]){ //check if timer is enabled
+            IORegister[12] += 1; //TIMER CURRENT += 1
+        }
+        if(IORegister[12] == IORegister[13]){
+            IORegister[12] = 0; // TIMER CURRENT = 0
+            IORegister[3] = 0; //turn on irq0 bit for timer.
+        }
+        ////////END CHECK FOR TIMER INTERRUPT
+        int old_pc = pc; 
+        run_command(cmdLst[pc]);//now pc has changed.......
+        if(pc == old_pc){
+            pc += 1;
+        }
+        
+        timer+=1;
+        if(Disk_cycle_timer == 1023){ // FREE IO DISK
+            IORegister[4] = 1;
+            IORegister[14] = 0;
+            IORegister[17] = 0;
+        }
+        if(IORegister[17] == 1){
+            Disk_cycle_timer += 1;
+        }
+    }
 }
 
 
-int run_command(Instruction instruction){
-    if(instruction.op <= 8){
-        run_arithmetic(instruction,instruction.op);
+int run_command(Instruction *instruction){
+    if(instruction->op <= 8){
+        run_arithmetic(*instruction,instruction->op);
+    }   
+    else if(instruction->op <= 15){
+        run_jump_branch_commands(*instruction , instruction->op);
     }
-    else if(instruction.op <= 15){
-        run_jump_branch_commands(instruction , instruction.op);
+    else if(instruction->op <= 17){
+        run_memory_command(*instruction,instruction->op);
     }
-    else if(instruction.op <= 17){
-        run_memory_command(instruction,instruction.op);
+    else if(instruction->op <= 20){
+        run_IOregister_operations(*instruction, instruction->op);
     }
-    else if(instruction.op <= 20){
-        run_IOregister_operations(instruction, instruction.op);
-    }
-    else if(instruction.op == 21){
+    else if(instruction->op == 21){
         exit(1); //determine exit message
     }
     else{
@@ -180,9 +242,10 @@ void run_memory_command(Instruction instruction , int id){
     }
 }
 
-void run_IOregister_operation(Instruction instruction , int id){
+void run_IOregister_operations(Instruction instruction , int id){
     if(id == 18){
         pc = IORegister[7];
+        IN_INTERRUPT = 0; //SO FLAG WON'T BE TRIGGERED
     }
     else if(id == 19){
         R[instruction.rd] = IORegister[R[instruction.rs] + R[instruction.rt]];

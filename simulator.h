@@ -17,8 +17,11 @@ int pc = 0;
 int IORegister[NUM_OF_IOREGISTERS];
 int MEM[MAX_SIZE];
 int R[16];
+int IN_INTERRUPT;
 const char *inst_filename = "imemin.txt";
 const char *data_filename = "dmemin.txt";
+int** DISK_IO;
+int** monitor_frame; 
 
 
 typedef struct instruction {
@@ -38,8 +41,8 @@ int read_from_file(FILE *fp, int len, bool readData);
 int add_to_cmd_lst(Instruction *cmdLst, char *inst);
 int add_to_data_lst(int *mem, char *data);
 int add_to_cmd_lst(Instruction *cmdLst, char *inst);
-int run_command(Instruction instruction);
+int run_command(Instruction *instruction);
 void run_arithmetic(Instruction instruction, int id);
 void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
-void run_IOregister_operation(Instruction instruction , int id);
+void run_IOregister_operations(Instruction instruction , int id);
