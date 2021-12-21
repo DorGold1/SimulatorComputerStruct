@@ -10,8 +10,15 @@
 #define INSTRUCTION_LEN 13
 #define DATA_LEN 9
 #define MAX_SIZE 4096
-#define SUCCESS 0
-#define FAILURE 1
+#define MAX_INSTRUCTIONS 4096
+#define NUM_OF_IOREGISTERS 23
+
+int pc = 0;
+int IORegister[NUM_OF_IOREGISTERS];
+int MEM[MAX_SIZE];
+int R[16];
+const char *inst_filename = "imemin.txt";
+const char *data_filename = "dmemin.txt";
 
 
 typedef struct instruction {
@@ -25,13 +32,6 @@ typedef struct instruction {
 } Instruction;
 
 Instruction **cmdLst;
-
-int MEM[MAX_SIZE];
-
-int R[16];
-
-const char *inst_filename = "imemin.txt";
-const char *data_filename = "dmemin.txt";
 
 
 int read_from_file(FILE *fp, int len, bool readData);

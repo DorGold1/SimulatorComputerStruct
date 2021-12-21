@@ -1,4 +1,5 @@
 #include "simulator.h"
+#include <math.h>
 
 int main() {
     int i, res;
@@ -65,15 +66,119 @@ int add_to_data_lst(int *mem, char *data) {
     *mem = (int)strtol(data, NULL, 16);
 }
 
+void run_arithmetic(Instruction instruction, int id){
+    if(id == 0){
+        R[instruction.rd] = R[instruction.rs] + R[instruction.rt] + R[instruction.rm];
+    }
+    else if(id == 1){
+        R[instruction.rd] = R[instruction.rs] - R[instruction.rt] - R[instruction.rm];
+    }
+    else if(id == 2){
+        R[instruction.rd] = R[instruction.rs] * R[instruction.rt] + R[instruction.rm];
+    }
+    else if(id == 3){
+        R[instruction.rd] = R[instruction.rs] & R[instruction.rt] & R[instruction.rm];
+    }
+    else if(id == 4){
+        R[instruction.rd] = R[instruction.rs] | R[instruction.rt] | R[instruction.rm];
+    }
+    else if(id == 5){
+        R[instruction.rd] = R[instruction.rs] ^ R[instruction.rt] ^ R[instruction.rm];
+    }
+    else if(id == 6){
+        R[instruction.rd] = R[instruction.rs] << R[instruction.rt];
+    }
+    //check if this is ok!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    else if(id == 7){
+        R[instruction.rd] = R[instruction.rs] / power(2,R[instruction.rt]); //need to do left arithmetic shift 
+    }
+    else if(id == 8){
+        R[instruction.rd] = R[instruction.rs] >> R[instruction.rt];
+    }
 
-void run_add_or_sub(Instruction instruction, int id){
-    int a = 1;
+}
+
+void run_jump_brunch_commands(Instruction instruction, int id){
+    int mask = 4095;
+    int program_counter_new_address = R[instruction.rm] & mask;
+    if(id == 9){
+        if(R[instruction.rs] == R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 10){
+        if(R[instruction.rs] != R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 11){
+        if(R[instruction.rs] < R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 12){
+        if(R[instruction.rs] > R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 13){
+        if(R[instruction.rs] <= R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 14){
+        if(R[instruction.rs] >= R[instruction.rt]){
+            pc = program_counter_new_address;
+        }
+    }
+    else if(id == 15){
+        R[instruction.rd] = pc + 1;
+        pc = program_counter_new_address;
+    }
+}
+
+void run_memmory_command(Instruction instruction , int id){
+    if(id == 16){
+        R[instruction.rd] = MEM[R[instruction.rs] + R[instruction.rt]] + R[instruction.rm]; 
+    }
+    else if(id == 17){
+        MEM[R[instruction.rs] + R[instruction.rt]] = R[instruction.rm] + R[instruction.rt];
+    }
+}
+
+void run_register_operation(Instruction instruction , int id){
+    if(id == 18){
+        pc = IORegister[7];
+    }
+    else if(id == 19){
+        R[instruction.rd] = IORegister[R[instruction.rs] + R[instruction.rt]];
+    }
+    else if(id == 20){
+        IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
+    }
 }
 
 int run_command(Instruction instruction){
-    if(instruction.op == 0 || instruction.op == 1){
-        run_add_or_sub(instruction,instruction.op);
+    if(instruction.op <= 8){
+        run_arithmetic(instruction,instruction.op);
     }
-    
+    else if(instruction.op <= 15){
+        run_jump_brunch_commands(instruction , instruction.op);
+    }
+    else if(instruction.op <= 17){
+        run_memmory_command(instruction,instruction.op);
+    }
+    else if(instruction.op <= 20){
+        run_register_operations(instruction, instruction.op);
+    }
+    else if(instruction.op == 21){
+        exit(1); //determine exit message
+    }
+    else{
+        printf("op code not recognized"); //determine message
+    }
+}
+
+int main_loop(){
 
 }
