@@ -77,4 +77,14 @@ char cut_string_by_index(char *str, int i) {
     return tmp;
 }
 
+void run_add_or_sub(Instruction instruction, int id){
+    int a = 1;
+}
 
+int run_command(Instruction instruction){
+    if(instruction.op == 0 || instruction.op == 1){
+        run_add_or_sub(instruction,instruction.op);
+    }
+    
+
+}
