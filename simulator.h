@@ -17,6 +17,8 @@
 #define NUM_SECTORS 128
 #define SECTOR_SIZE 128
 #define MONITOR_RES 256
+#define REGISTERS_LEN 16
+#define TRACE_LEN 161
 
 
 typedef struct instruction {
@@ -32,7 +34,7 @@ typedef struct instruction {
 Instruction **cmdLst;
 
 //Registers, Memory, IO Devices
-int R[16];
+int R[REGISTERS_LEN];
 int IORegister[NUM_IOREGISTERS];
 int MEM[MAX_DATA];
 int PC = 0;
@@ -47,6 +49,10 @@ const char *inst_filename = "imemin.txt";
 const char *data_filename = "dmemin.txt";
 const char *irq2_filename = "irq2in.txt";
 const char *disk_filename = "diskin.txt";
+
+//FilePointers to append to
+FILE *trace_fp = fopen("trace.txt","w");
+
 
 //Func Declarations
 int main_loop();

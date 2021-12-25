@@ -1,7 +1,7 @@
 #include "simulator.h"
 #include "Assembler.h"
 
-typedef enum {data, instruction, irq2, disk, registers} Mode;
+typedef enum {data, instruction, irq2, disk, registers, trace} Mode;
 
 //Utils Func Declarations
 int read_from_file(FILE *fp, int len, Mode mode);
@@ -12,6 +12,7 @@ void dec2hexa(char* result, int num, int len);
 int hexa2dec(char *hex_rep, int len);
 int write_to_file(FILE *fp, int len, Mode mode);
 void set_line_to_zero(char *line, int len);
+int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len);
 
 
 //Simulator Related Func
@@ -22,6 +23,7 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst);
 int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);
 int write_dmemout(FILE *fp, char *line, int len);
+int write_registers(FILE *fp, char *line, int len);
 
 
 int read_from_file(FILE *fp, int len, Mode mode) {
@@ -190,18 +192,38 @@ int write_to_file(FILE *fp, int len, Mode mode) {
         case (registers): //Write imemout
             res = write_registers(fp, line, len);
             break;
-        case (irq2): //Write irq2out
-            res = write_irq2out(fp, line, len);
+        case (trace):
+            res = write_trace(fp, line, len);
             break;
     }
 }
 
 
 int write_dmemout(FILE *fp, char *line, int len) {
-    int i, val;
-    for (i=0; i<MAX_DATA; i++) {
-        set_line_to_zero(line, len);
-        dec2hexa(line, MEM[i], len);
+    return write_int_arr_to_file(fp, line, len, MEM, MAX_DATA);
+}
+
+
+int write_trace(FILE *fp, char *line, int len) {
+    
+}
+
+
+int write_str_to_file(FILE *fp, char *line) {
+    fputs(line, fp);
+    fputs("\n", fp);
+}
+
+
+int write_registers(FILE *fp, char *line, int len) {
+    return write_int_arr_to_file(fp, line, len, R, REGISTERS_LEN);
+}
+
+int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len) {
+    int i;
+    for (i=0; i<arr_len; i++) {
+        set_line_to_zero(line, line_len);
+        dec2hexa(line, arr[i], line_len);
         fputs(line, fp);
         fputs("\n", fp);
     }
