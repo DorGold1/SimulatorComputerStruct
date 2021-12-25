@@ -44,6 +44,9 @@ int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
 
+//cycle timer for disk
+int diskCycleTimer = 0;
+
 //Filenames
 const char *inst_filename = "imemin.txt";
 const char *data_filename = "dmemin.txt";
