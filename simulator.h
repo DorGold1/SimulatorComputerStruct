@@ -62,6 +62,9 @@ void run_IOregister_operation(Instruction instruction , int id);
 
 //Utils Func Declarations
 int read_from_file(FILE *fp, int len, Mode mode);
+int init_data_lst(FILE *fp, char *line, int len);
+int init_cmd_lst(FILE *fp, char *line, int len);
+int init_irq2_lst(FILE *fp, char *line, int len);
 int add_to_cmd_lst(Instruction *cmdLst, char *inst);
 int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);

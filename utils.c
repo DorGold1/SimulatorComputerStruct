@@ -1,23 +1,54 @@
 int read_from_file(FILE *fp, int len, Mode mode) {
-    int i = 0;
     char *line = malloc(len*sizeof(char));
+    int res;
+    switch (mode) {
+        case (0): //Read dmemin
+            res = init_data_lst(fp, line, len);
+            break;
+        case (1): //Read imemin
+            res = init_cmd_lst(fp, line, len);
+            break;
+        case (2): //Read irq2in
+            res = init_irq2_lst(fp, line, len);
+            break;
+    }
+    fill_with_null(res, MAX_INSTRUCTIONS, mode);
+}
+
+
+int init_data_lst(FILE *fp, char *line, int len) {
+    int i = 0;
     while(fgets(line, len, fp)) {
-        /* note that fgets don't strip the terminating \n, checking its
-           presence would allow to handle lines longer that sizeof(line) */
         if (strcmp(line,"\n") == 0) {
             continue;
         }
-        if (mode == 0) { //Read Data
-			add_to_data_lst(&MEM[i++], line);
-        }
-		if (mode == 1) { //Read Instructions
-            add_to_cmd_lst(cmdLst[i++], line);
-        }
-        if (mode == 2) { //Read Irq2
-			add_to_irq2_lst(&irq2Lst[i++], line);
-        }
+        add_to_data_lst(&MEM[i++], line);
     }
-    fill_with_null(i, MAX_INSTRUCTIONS, mode);
+    return i;
+}
+
+
+int init_cmd_lst(FILE *fp, char *line, int len) {
+    int i = 0;
+    while(fgets(line, len, fp)) {
+        if (strcmp(line,"\n") == 0) {
+            continue;
+        }
+        add_to_cmd_lst(cmdLst[i++], line);
+    }
+    return i;
+}
+
+
+int init_irq2_lst(FILE *fp, char *line, int len) {
+    int i = 0;
+    while(fgets(line, len, fp)) {
+        if (strcmp(line,"\n") == 0) {
+            continue;
+        }
+        add_to_irq2_lst(&irq2Lst[i++], line);
+    }
+    return i;
 }
 
 

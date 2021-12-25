@@ -1,7 +1,6 @@
 #include "simulator.h"
 #include "utils.c"
 
-
 int main() {
     int i, res;
     FILE *fp;
