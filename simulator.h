@@ -36,10 +36,13 @@ int IORegister[NUM_IOREGISTERS];
 int MEM[MAX_DATA];
 int PC = 0;
 int **diskIO;
-uint8_t **monitorFrame;
+uint8_t *monitorFrame;
 int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
+
+//cycle timer for disk
+int diskCycleTimer = 0;
 
 //Filenames
 const char *inst_filename = "imemin.txt";
