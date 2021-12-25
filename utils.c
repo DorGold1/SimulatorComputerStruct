@@ -1,3 +1,24 @@
+#include "simulator.h"
+#include "Assembler.h"
+
+//Utils Func Declarations
+int read_from_file(FILE *fp, int len, Mode mode);
+void fill_with_null(int start, int end, Mode mode);
+char cut_string_by_index(char *str, int i);
+int compare (const void * a, const void * b);
+void dec2hexa(char* result, int num);
+int hexa2dec(char *hex_rep, int len);
+
+
+//Simulator Related Func
+int init_data_lst(FILE *fp, char *line, int len);
+int init_cmd_lst(FILE *fp, char *line, int len);
+int init_irq2_lst(FILE *fp, char *line, int len);
+int add_to_cmd_lst(Instruction *cmdLst, char *inst);
+int add_to_data_lst(int *mem, char *data);
+int add_to_irq2_lst(int *irq2, char *data);
+
+
 int read_from_file(FILE *fp, int len, Mode mode) {
     char *line = malloc(len*sizeof(char));
     int res;
@@ -117,5 +138,37 @@ void fill_with_null(int start, int end, Mode mode) {
 
 int compare (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
+}
+
+
+void dec2hexa(char* result, int num){
+    int currIdx, hex_len = strlen(result);
+    if (num != 0) {
+        int i =0;
+        while (num != 0){
+            int tmp = num%16;
+            currIdx = hex_len-1-i;
+            if (tmp <10) {result[currIdx] = tmp+48;}
+            else {result[currIdx] = tmp+55;}
+            i++;
+            num = num/16;
+        }
+    }
+}
+
+
+int hexa2dec(char *hex_rep, int len){
+    int ans = 0, ch_val;
+    char ch;
+    for (int idx = 0; idx < len; idx++){
+         ans *= 16;
+         ch = hex_rep[idx];
+         if (ch>47 && ch< 58) ch_val = ((int) ch) - 48;
+         else if (ch>64 && ch< 71) ch_val = ((int) ch) - 65 + 10;
+         else ch_val = ((int) ch) - 97 + 10;  
+
+        ans += ch_val;
+    }
+    return ans;
 }
 

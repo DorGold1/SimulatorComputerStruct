@@ -1,3 +1,10 @@
+#ifndef INCLUDEINIT
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
+#endif
+
 /*---------------------------------------------------------------Define Constants-------------------------------------------------------------*/
 #define memSize 4096
 #define MAX_STR_LEN 100
@@ -10,8 +17,6 @@
 int isletter(char c);
 int isHexa (char* str); /*returns 0 if str isn't hex rep of number, otherwise returns its length*/
 int str_to_2complement(char* str, int max_bits_idx);  /*get number as a string and last idx of binary rep - returns it's value in 2's complement rep*/
-void dec2hexa(char* result, int num, int hex_len);
-int hexa2dec(char *hex_rep, int len);
 void str2param (char* result, const char *str);
 void str2Hex (char* result, char *str);
 void add_op_to_result(char* result, char* str);
@@ -128,35 +133,6 @@ void add_reg_to_result(char* result, char* str){
     strcat(result, tmp);
 }
 
-void dec2hexa(char* result, int num){
-    int currIdx, hex_len = strlen(result);
-    if (num != 0) {
-        int i =0;
-        while (num != 0){
-            int tmp = num%16;
-            currIdx = hex_len-1-i;
-            if (tmp <10) {result[currIdx] = tmp+48;}
-            else {result[currIdx] = tmp+55;}
-            i++;
-            num = num/16;
-        }
-    }
-}
-
-int hexa2dec(char *hex_rep, int len){
-    int ans = 0, ch_val;
-    char ch;
-    for (int idx = 0; idx < len; idx++){
-         ans *= 16;
-         ch = hex_rep[idx];
-         if (ch>47 && ch< 58) ch_val = ((int) ch) - 48;
-         else if (ch>64 && ch< 71) ch_val = ((int) ch) - 65 + 10;
-         else ch_val = ((int) ch) - 97 + 10;  
-
-        ans += ch_val;
-    }
-    return ans;
-}
 
 int str_to_2complement(char* str, int max_bits_idx){
     int num = strtol(str, (char**) NULL, 10);

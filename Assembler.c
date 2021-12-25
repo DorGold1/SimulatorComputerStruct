@@ -1,8 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
-#include "Assembler.h"
+#include "utils.c"
 
 /*Input of Assembler.c is {program.asm imemin.txt dmemin.txt}
 program.asm is the program to parse
@@ -16,7 +12,7 @@ label_list *Labels;
 
 /*---------------------------------------Functions Declarations---------------------------------------*/
 
-void init_TablesnQ();
+void init_DS();
 void verify_input(int argc, char *program_path, FILE *fp);
 
 /*gets line as read from file and getting it ready for parsing*/
@@ -33,7 +29,7 @@ void parseInstruction(char** line, int pc);
 void parseLabel(char **line, int pc);
 void parseWord (char **line);
 
-void add_line_to_table(char *parsedLine, char *hex_address, int is_intruction);
+void add_line_to_table(char *parsedLine, int hex_address, int is_intruction);
 void update_pc(int *pc, lineType lt);
 /*end of helping functions*/
 
@@ -48,10 +44,8 @@ int get_label_pc(char* search_term);
 /*---------------------------------------Functions Implementations------------------------------------*/
 
 int fix_line_for_parsing(char **broken_res, char *lineBuffer){
-    //gets not-allocated memory pointer for result
+    //gets allocated memory pointer for result
     int line_len;
-    broken_res = (char **) malloc(MAX_LINE_LEN*sizeof(char *));
-    for (int i =0; i<MAX_LINE_LEN; i++) {broken_res[i] = (char *) calloc(MAX_STR_LEN,sizeof(char));}
     line_len = break_buffer(broken_res, lineBuffer);
     drop_comment(broken_res, line_len);
     return line_len;
@@ -109,6 +103,7 @@ lineType get_lineType(int line_len){
         case 0:
             return Empty;
         case 1:
+        //label will have : next to label's name
             return LabelOnly;
         case 3:
             return WordOnly;
@@ -193,7 +188,7 @@ void update_pc(int *pc, lineType lt){
     if (lt == InstructionOnly || lt == Label_Instruction) *pc++;
 }
 
-void init_TablesnQ(){
+void init_DS(){
     imem_table = (char **) malloc(memSize*sizeof(char *));
     for (int i = 0; i< memSize; i++) {imem_table[i] = malloc((iEntryLen+1)*sizeof(char));}
     dmem_table = (char **) malloc(memSize*sizeof(char *));
@@ -220,25 +215,26 @@ int main(int argc, char** argv) {
     /*WORK FLOW*/
     FILE *fp;
     char *lineBuffer = NULL, **ready_line;
-    int char_read, line_len, lineBuffer_size = 0, pc = 0;
-    //init Tables and Queue
-    //verify everything is working
-    init_TablesnQ();
+    int bytes_read, line_len, lineBuffer_size = 0, pc = 0;
+    
+    init_DS();
     verify_input(argc, argv[1], fp);
+    ready_line = (char **) malloc(MAX_LINE_LEN*sizeof(char *));
+    for (int i =0; i<MAX_LINE_LEN; i++) {ready_line[i] = (char *) calloc(MAX_STR_LEN,sizeof(char));}
 
-    while ((char_read = getline(&lineBuffer, &lineBuffer_size, fp)) != -1) {
-        ready_line = NULL;  //suppose to re-init the line
+    while ((bytes_read = getline(&lineBuffer, &lineBuffer_size, fp)) != -1) {
+        
         line_len = fix_line_for_parsing(ready_line, lineBuffer);
         parseLine(ready_line, line_len, &pc);
             //is it legal?
         for (int i=0; i<MAX_LINE_LEN; i++) {free(ready_line[i]; ready_line[i]=NULL);}
-        free(ready_line);
+        ready_line = NULL;  //suppose to re-init the line
+        // free(ready_line);
     }
     //verify end of file || error ??
-    fclose(fp);
-        //should change this line:
     if (lineBuffer != NULL) free(lineBuffer);
-    if (ready_line != NULL) free(ready_line);
+    lineBuffer = NULL;  
+    fclose(fp);
     //second pass - updating labels
     //copying tables to files
     
