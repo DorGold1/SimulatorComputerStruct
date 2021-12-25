@@ -44,15 +44,6 @@ int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
 
-//Filenames
-const char *inst_filename = "imemin.txt";
-const char *data_filename = "dmemin.txt";
-const char *irq2_filename = "irq2in.txt";
-const char *disk_filename = "diskin.txt";
-
-//FilePointers to append to
-FILE *trace_fp = fopen("trace.txt","w");
-
 
 //Func Declarations
 int main_loop();

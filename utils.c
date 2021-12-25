@@ -1,7 +1,9 @@
 #include "simulator.h"
 #include "Assembler.h"
 
+//Mode enum for read/write file.
 typedef enum {data, instruction, irq2, disk, registers, trace} Mode;
+
 
 //Utils Func Declarations
 int read_from_file(FILE *fp, int len, Mode mode);
@@ -24,6 +26,7 @@ int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);
 int write_dmemout(FILE *fp, char *line, int len);
 int write_registers(FILE *fp, char *line, int len);
+int write_trace(FILE *fp, char *line, int len);
 
 
 int read_from_file(FILE *fp, int len, Mode mode) {
@@ -205,7 +208,7 @@ int write_dmemout(FILE *fp, char *line, int len) {
 
 
 int write_trace(FILE *fp, char *line, int len) {
-    
+    set_line_to_zero(line, TRACE_LEN);
 }
 
 
@@ -224,8 +227,7 @@ int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_
     for (i=0; i<arr_len; i++) {
         set_line_to_zero(line, line_len);
         dec2hexa(line, arr[i], line_len);
-        fputs(line, fp);
-        fputs("\n", fp);
+        write_str_to_file(fp, line);
     }
     return 1;
 }

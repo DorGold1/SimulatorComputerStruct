@@ -1,12 +1,17 @@
 #include "utils.c"
 
-int main() {
+
+
+int main(int argc, char **argv) {
+    //FilePointers to append to
+    FILE *trace_fp = fopen("trace.txt","w");
+    
     int i, res;
     FILE *fp;
     Mode mode;
 
     mode = instruction;
-    fp = fopen(inst_filename,"r");
+    fp = fopen(argv[1],"r");
 	cmdLst = malloc(MAX_INSTRUCTIONS * sizeof(Instruction *));
     for(i=0; i<MAX_INSTRUCTIONS; i++) {
         cmdLst[i] = (Instruction *)malloc(sizeof(Instruction *));
@@ -15,23 +20,23 @@ int main() {
 	fclose(fp);
 
     mode = data;
-    fp = fopen(data_filename,"r");
+    fp = fopen(argv[2],"r");
 	read_from_file(fp, DATA_LEN, mode);
     fclose(fp);
 
-	mode = irq2;
-    irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
-    fp = fopen(irq2_filename,"r");
-    read_from_file(fp, INSTRUCTION_LEN, mode);
-    fclose(fp);
-
 	mode = disk;
-    fp = fopen(disk_filename,"r");
+    fp = fopen(argv[3],"r");
     diskIO = malloc(NUM_SECTORS * sizeof(int *));
     for (i=0; i<NUM_SECTORS; i++) {
 		diskIO[i] = calloc(SECTOR_SIZE, sizeof(int));
     }
 	//READ DISK - HOW?!?!?!?
+
+	mode = irq2;
+    irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
+    fp = fopen(argv[4],"r");
+    read_from_file(fp, INSTRUCTION_LEN, mode);
+    fclose(fp);
 
     //Init the rest of the IO devices
     monitorFrame = malloc(MONITOR_RES * MONITOR_RES * sizeof(uint8_t));
