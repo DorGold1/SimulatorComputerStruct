@@ -8,7 +8,7 @@ dmemin.txt is the data memory file
 
 /*--------------------------------------------GLOBAL STUFF---------------------------------------------*/
 char **imem_table, **dmem_table;
-label_list *Labels;
+Queue *Labels, *instructions_with_label;
 
 /*---------------------------------------Functions Declarations---------------------------------------*/
 
@@ -26,7 +26,7 @@ void drop_comment(char **line, int line_len);
 void parseLine(char **line, int lLength, int *pc);
 /*Helping Functions*/
 void parseInstruction(char** line, int pc);
-void parseLabel(char **line, int pc);
+void parseLabel(char *label_name, int pc);
 void parseWord (char **line);
 
 void add_line_to_table(char *parsedLine, int hex_address, int is_intruction);
@@ -36,9 +36,12 @@ void update_pc(int *pc, lineType lt);
 /*returns the type of line currently being read*/
 lineType get_lineType(int line_len);
 
-/*Labels Queue - Helping Functions*/
-void add_new_label(label_node *new);
+/*Queue - Helping Functions*/
+void add_to_Queue(data_node *new, int isLabel);
+void make_new_node(data_node *new, char *name, int pc);
 int get_label_pc(char* search_term);
+int label_exist(char *label_name);
+
 /*end of helping functions*/
 
 /*---------------------------------------Functions Implementations------------------------------------*/
@@ -76,7 +79,7 @@ void parseLine(char **line, int line_len, int *pc){
     switch (lt)
     {
         case LabelOnly:
-            parseLabel(line, *pc);
+            parseLabel(line[0], *pc);
             break;
         case WordOnly:
             parseWord(line);
@@ -118,28 +121,35 @@ void parseInstruction (char **line, int pc){
 
     char *result = (char *) calloc(iEntryLen, sizeof(char));
     //getting the parsed instruction into result
+    int hasLabel = 0;
     for (int i=0; i< 7; i++) {
         if (i==0) { add_op_to_result(result, line[0]);}
         else if (i<5) { add_reg_to_result(result, line[i]);}
-        else { add_imm_to_result(result, line[i]);}//need to set case for label
+        else {
+            hasLabel = add_imm_to_result(result, line[i]);
+            data_node *instruction_node = (data_node *) malloc(sizeof(data_node));
+            make_new_node(instruction_node, line[i], pc);
+            add_to_Queue(instruction_node, 0);
+        }
     }
-    printf("the proccessed command is: %s\n", result);
+    // printf("the proccessed command is: %s\n", result);
     add_line_to_table(result, pc, 1);
 }
 
-void parseLabel(char **line, int pc){
-    label_node *new;
-    int name_len;
+void parseLabel(char *label_name, int pc){
+    if (label_exist(label_name) == 0){
+        data_node *new = (data_node *) malloc(sizeof(data_node));
+        make_new_node(new, label_name, pc);
+        add_to_Queue(new, 1);
+    }
+}
 
-    new = (label_node *) malloc(sizeof(label_node));
-    name_len = strlen(line[0]);
-
+void make_new_node(data_node *new, char *name, int pc){
+    int name_len = strlen(name);
     new->name = (char *) malloc(name_len*sizeof(char));
-    strcpy(new->name, line[0]);
+    strcpy(new->name, name);
     new->pc_num  = pc;
     new->next = NULL;
-
-    add_new_label(new);
 }
 
 void parseWord (char **line){
@@ -156,14 +166,16 @@ void parseWord (char **line){
     add_line_to_table(hex_data, dec_address, 0);
 }
 
-void add_new_label(label_node *new){
-    if (Labels->head == NULL){
-        Labels->head = new;
-        Labels->tail = new;
+void add_to_Queue(data_node *new, int isLabel){
+    Queue *currQ;
+    currQ = isLabel == 1 ? Labels : instructions_with_label; 
+    if (currQ->head == NULL){
+        currQ->head = new;
+        currQ->tail = new;
     }
     else {
-        Labels->tail->next = new;
-        Labels->tail = new;
+        currQ->tail->next = new;
+        currQ->tail = new;
     }
 }
 
@@ -175,7 +187,7 @@ void add_line_to_table(char *parsedLine, int address, int is_intruction){
 }
 
 int get_label_pc(char* search_term){
-    label_node *curr;
+    data_node *curr;
     curr = Labels->head;
     while (curr != NULL) {
         if (strcmp(curr->name, search_term)== 0) return curr->pc_num;
@@ -185,7 +197,7 @@ int get_label_pc(char* search_term){
 }
 
 void update_pc(int *pc, lineType lt){
-    if (lt == InstructionOnly || lt == Label_Instruction) *pc++;
+    if (lt == InstructionOnly || lt == Label_Instruction) *pc = *pc +1;
 }
 
 void init_DS(){
@@ -193,9 +205,12 @@ void init_DS(){
     for (int i = 0; i< memSize; i++) {imem_table[i] = malloc((iEntryLen+1)*sizeof(char));}
     dmem_table = (char **) malloc(memSize*sizeof(char *));
     for (int i = 0; i< memSize; i++) {dmem_table[i] = malloc((dEntryLen+1)*sizeof(char));}
-    Labels = (label_list *) malloc(sizeof(label_list));
+    Labels = (Queue *) malloc(sizeof(Queue));
     Labels->head = NULL;
     Labels->tail = NULL;
+    instructions_with_label = (Queue *) malloc(sizeof(Queue));
+    instructions_with_label->head = NULL;
+    instructions_with_label->tail = NULL;
 }
 
 void verify_input(int argc, char *program_path, FILE *fp){
@@ -208,6 +223,15 @@ void verify_input(int argc, char *program_path, FILE *fp){
         printf("Failed to open %s.\n", program_path);
         exit(EXIT_FAILURE);
     }
+}
+
+int label_exist(char *label_name){
+    data_node *curr = Labels->head;
+    while (curr != NULL){
+        if (strcmp(curr->name, label_name) == 0) return 1;
+        else curr = curr->next;
+    }
+    return 0;
 }
 /*--------------------------------------------------MAIN--------------------------------------------*/
 
@@ -223,18 +247,14 @@ int main(int argc, char** argv) {
     for (int i =0; i<MAX_LINE_LEN; i++) {ready_line[i] = (char *) calloc(MAX_STR_LEN,sizeof(char));}
 
     while ((bytes_read = getline(&lineBuffer, &lineBuffer_size, fp)) != -1) {
-        
         line_len = fix_line_for_parsing(ready_line, lineBuffer);
         parseLine(ready_line, line_len, &pc);
-            //is it legal?
-        for (int i=0; i<MAX_LINE_LEN; i++) {free(ready_line[i]; ready_line[i]=NULL);}
-        ready_line = NULL;  //suppose to re-init the line
-        // free(ready_line);
     }
     //verify end of file || error ??
-    if (lineBuffer != NULL) free(lineBuffer);
+    if (lineBuffer != NULL) {free(lineBuffer);}
     lineBuffer = NULL;  
     fclose(fp);
+
     //second pass - updating labels
     //copying tables to files
     
@@ -249,5 +269,5 @@ int main(int argc, char** argv) {
     //     printf("broken at index %d is:\t%s", i, broken_line[i]);
     // }
     
-    return 0;
+    return EXIT_SUCCESS;
 }
