@@ -12,29 +12,32 @@
 #define conversionSize 38
 #define dEntryLen 8
 #define iEntryLen 12
+#define Label_flag "LBF"
 
 /*---------------------------------------------------------------FUNCTIONS & TYPEDEF DECLAREATIONS--------------------------------------------*/
-int isletter(char c);
-int isHexa (char* str); /*returns 0 if str isn't hex rep of number, otherwise returns its length*/
-int str_to_2complement(char* str, int max_bits_idx);  /*get number as a string and last idx of binary rep - returns it's value in 2's complement rep*/
+
 void str2param (char* result, const char *str);
 void str2Hex (char* result, char *str);
+int isLabel(char *str); /*returns 1 if str is label*/
+int isHexa (char* str); /*returns 0 if str isn't hex rep of number, otherwise returns its length*/
+int str_to_2complement(char* str, int hex_len);  /*get number as a string and last idx of binary rep - returns it's value in 2's complement rep*/
 void add_op_to_result(char* result, char* str);
 void add_reg_to_result(char* result, char* str);
 void add_imm_to_result(char* result, char* str);
 
-typedef struct label_node label_node;
-typedef struct label_list label_list;
+typedef struct data_node data_node;
+typedef struct Queue Queue;
 /*---------------------------------------------------------------ENUMS & STRUCTS---------------------------------------------------------------*/
-struct label_node{
-    char* name;
+
+struct data_node{
+    char *name;
     int pc_num;
-    label_node* next;
+    data_node* next;
 };
 
-struct label_list{
-    label_node *head;
-    label_node *tail;
+struct Queue{
+    data_node *head;
+    data_node *tail;
 };
 
 typedef enum {
@@ -96,29 +99,39 @@ const static struct {//used for op/reg
     {"F", "$ra"},
 };
 
-/*
+
 void str2param (char* result, const char *str){
      for (int i = 0;  i < conversionSize;  i++){
         if (strcmp(str, conversionparam[i].str)==0) { strcpy(result,conversionparam[i].param_code); break;}
     }
 }
 
-void str2Hex (char *result, char *str){         //function is called only after labels have been saved
+void str2Hex (char *result, char *str){
+    //gets hexa num or signed dec num as str--> returns into result its hexa rep
     int isHex, hex_len = strlen(result);
-    //if (isletter(str[0])) {//parse as label}
-    if (0) {}
-    else{ 
-        isHex = isHexa(str);
-        if (isHex) {strcpy(result+(hex_len-isHex), str+2);}
-        else {dec2hexa(result, str_to_2complement(str, (hex_len*4)-1));}
+    isHex = isHexa(str);
+    if (isHex) {
+        int startIdx = hex_len-isHex;
+        strcpy(result+startIdx, str+2);
+    }
+    else {
+        int two_com_rep = str_to_2complement(str, hex_len);
+        dec2hexa(result, two_com_rep, hex_len);
     }
 }
 
-void add_imm_to_result(char* result, char* str){
-    char *tmp = (char *) malloc(3*sizeof(char));
-    for (int i=0; i< 3; i++){ tmp[i] = '0';}
-    str2Hex(tmp, str);
-    strcat(result, tmp);
+int add_imm_to_result(char* result, char* str){
+    if (isLabel(str)) {
+        strcat(result, Label_flag);
+        return 1;
+    }
+    else {
+        char *tmp = (char *) malloc(3*sizeof(char));
+        for (int i=0; i< 3; i++){ tmp[i] = '0';}
+        str2Hex(tmp, str);
+        strcat(result, tmp);
+        return 0;
+    }
 }
 
 void add_op_to_result(char* result, char* str){
@@ -133,12 +146,13 @@ void add_reg_to_result(char* result, char* str){
     strcat(result, tmp);
 }
 
-
-int str_to_2complement(char* str, int max_bits_idx){
+int str_to_2complement(char* str, int hex_len){
+    //gets decimal num as str and returns it as int in 2's complement rep
     int num = strtol(str, (char**) NULL, 10);
+    int max_bits_idx = (hex_len*4)-1;
     if (num>=0) { return num;}
     else {
-        int max_neg = 1<<max_bits_idx;//immediate last bits' index can be max_bits in binary rep
+        int max_neg = 1<<max_bits_idx;
         int delta = max_neg+num;
         return (max_neg | delta);
     }
@@ -149,8 +163,3 @@ int isHexa (char* str){// check 0xnull case ??
    return 0;
 }
 
-int isletter(char c){
-    if ((c >= 65 && c<= 90 ) || (c>=97 && c<= 122)) {return 1;}
-    return 0;
-}
-*/
