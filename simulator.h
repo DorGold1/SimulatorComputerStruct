@@ -56,7 +56,6 @@ const char *disk_filename = "diskin.txt";
 //FilePointers to append to
 FILE *trace_fp = fopen("trace.txt","w");
 
-
 //Func Declarations
 int main_loop();
 void update_irq2(int cycle);
@@ -69,3 +68,5 @@ void run_arithmetic(Instruction instruction, int id);
 void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
 void run_IOregister_operation(Instruction instruction , int id);
+void write_from_disk(int* disk_sector, int* mem_buffer);
+void read_from_disk(int* disk_sector, int* mem_buffer);

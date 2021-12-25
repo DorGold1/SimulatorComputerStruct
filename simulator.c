@@ -49,16 +49,14 @@ void update_monitor_pixels(){
 
 int main_loop() {
     int oldPC, cycles = 0;
-	while(cmdLst[PC]) {
+	while(cmdLst[PC]){
         //Handle disk and timer
         diskIO_handler();
         timer_handler();
         update_irq2(cycles);
         update_monitor_pixels();
-
         //Handle interrupts
         interrupt_handler();
-
         //Execute current command
         oldPC = PC; 
         run_command(*cmdLst[PC]);
@@ -67,6 +65,7 @@ int main_loop() {
         }
         //Update cycle count
         cycles+=1;
+        printf("%d", PC);
         IORegister[8] = cycles;
     }
     return EXIT_SUCCESS;
@@ -115,7 +114,7 @@ void read_from_disk(int* disk_sector, int* mem_buffer){ //read from disk to mem
     }
 }
 
-void write_from_disk(int* disk_sector, int* mem_buffer){
+void write_to_disk(int* disk_sector, int* mem_buffer){
     int i;
     for(i = 0 ; i < SECTOR_SIZE ; i++){
         disk_sector[i] = mem_buffer[i];
@@ -132,10 +131,10 @@ void diskIO_handler() {
         sector = IORegister[15];
         buffer = IORegister[16];
         if(type_of_operation == 1) {//read operation...
-            read_from_disk(&diskIO[sector], &MEM[buffer]);
+            read_from_disk(diskIO[sector], &MEM[buffer]);
         }
         else{
-            write_to_disk(&diskIO[sector], &MEM[buffer]);
+            write_to_disk(diskIO[sector], &MEM[buffer]);
         }
     }
     else if(IORegister[17] == 0){//disk is not free.
@@ -164,7 +163,8 @@ void timer_handler() {
 
 
 int run_command(Instruction instruction) {
-    write_to_trace_txt(Instruction instruction);// TASK - WRITE TO TRACE.TXT LINE WITH PC , INST (12 DIGITS OF INSTRUCTION) AND REGISTERS BEFORE COMMAND - READ DESCRIPTION IN FILE BEFORE! 
+    printf("%d" , instruction.op);
+    //write_to_trace_txt(instruction);// TASK - WRITE TO TRACE.TXT LINE WITH PC , INST (12 DIGITS OF INSTRUCTION) AND REGISTERS BEFORE COMMAND - READ DESCRIPTION IN FILE BEFORE! 
     if(instruction.op <= 8) {
         run_arithmetic(instruction,instruction.op);
     }
@@ -178,9 +178,9 @@ int run_command(Instruction instruction) {
         run_IOregister_operation(instruction, instruction.op);
     }
     else if(instruction.op == 21) {
-        make_regout_txt_file(); // TASK - make file
-        make_cycles_txt_file(); // TASK - MAKE FILE WITH NUM OF CYCLES.
-        make_monitor_txt_file(); // TASK - MAKE FILE FOR MONITOR OUTPUT - EACH ROW IS VALUE IN HEXA, FIRST ROW 0,0 THEN 0,1 .... 1,0 , 1,1 - INDEXES - OUR ARRAY IS FLATTENED.
+        //make_regout_txt_file(); // TASK - make file
+        //make_cycles_txt_file(); // TASK - MAKE FILE WITH NUM OF CYCLES.
+        //make_monitor_txt_file(); // TASK - MAKE FILE FOR MONITOR OUTPUT - EACH ROW IS VALUE IN HEXA, FIRST ROW 0,0 THEN 0,1 .... 1,0 , 1,1 - INDEXES - OUR ARRAY IS FLATTENED.
         exit(1); //determine exit message
     }
     else{
@@ -277,18 +277,18 @@ void run_IOregister_operation(Instruction instruction , int id) {
     }
     else if(id == 19) { //READ FROM IO REGISTER
         R[instruction.rd] = IORegister[R[instruction.rs] + R[instruction.rt]];
-        write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
+        //write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
     }
     else if(id == 20) { // WRITE TI IO REGISTER
         if(R[instruction.rs]+R[instruction.rt] == 9){
-            write_to_led_file();// TASK - WRITE TO LED FILE A LINE WITH CYCLE NUM , NEW LED VALUE.
+            //write_to_led_file();// TASK - WRITE TO LED FILE A LINE WITH CYCLE NUM , NEW LED VALUE.
         }
         if(R[instruction.rs]+R[instruction.rt] == 10){
-            write_to_seven_seg_display_file(); // TASK - WRITE TO DISPLAY7SEG.TXT THE CYCLE NUM , NEW DISPLAY VALUE
+            //write_to_seven_seg_display_file(); // TASK - WRITE TO DISPLAY7SEG.TXT THE CYCLE NUM , NEW DISPLAY VALUE
         }
 
         IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
-        write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
+        //write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
     }
 
 }
