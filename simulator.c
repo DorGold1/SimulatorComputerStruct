@@ -1,10 +1,7 @@
 #include "utils.c"
 
-
-
 int main(int argc, char **argv) {
     //FilePointers to append to
-    FILE *trace_fp = fopen("trace.txt","w");
     
     int i, res;
     FILE *fp;
@@ -70,7 +67,6 @@ int main_loop() {
         }
         //Update cycle count
         cycles+=1;
-        printf("%d", PC);
         IORegister[8] = cycles;
     }
     return EXIT_SUCCESS;
@@ -89,16 +85,19 @@ void interrupt_handler() {
     int irqState[3];
     update_irqs_state(irqState);
     if((irqState[0] == 1) && (inInterrupt == 0)) { //TIMER INTERRUPT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[1] == 1) && (inInterrupt == 0)) { //DISK IO INTERRUPT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[2] == 1) && (inInterrupt == 0)) { //RETI 2 INTERRUOT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
@@ -168,7 +167,9 @@ void timer_handler() {
 
 
 int run_command(Instruction instruction) {
-    printf("%d" , instruction.op);
+    R[1] = instruction.immediate1;
+    R[2] = instruction.immediate2;
+    printf("%d", instruction.op);
     //write_to_trace_txt(instruction);// TASK - WRITE TO TRACE.TXT LINE WITH PC , INST (12 DIGITS OF INSTRUCTION) AND REGISTERS BEFORE COMMAND - READ DESCRIPTION IN FILE BEFORE! 
     if(instruction.op <= 8) {
         run_arithmetic(instruction,instruction.op);
@@ -226,8 +227,10 @@ void run_arithmetic(Instruction instruction, int id) {
 
 
 void run_jump_branch_commands(Instruction instruction, int id) {
-    int mask = 4095;
+    int mask =  1 << 12;
+    mask = mask - 1;
     int program_counter_new_address = R[instruction.rm] & mask;
+    printf("%d", program_counter_new_address);
     if(id == 9) {
         if(R[instruction.rs] == R[instruction.rt]) {
             PC = program_counter_new_address;
@@ -259,7 +262,7 @@ void run_jump_branch_commands(Instruction instruction, int id) {
         }
     }
     else if(id == 15) {
-        R[instruction.rd] = PC + 1;
+PC        R[instruction.rd] = PC + 1;
         PC = program_counter_new_address;
     }
 }
