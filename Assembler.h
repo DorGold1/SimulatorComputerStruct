@@ -96,16 +96,16 @@ const static struct {//used for op/reg
     {"F", "$ra"},
 };
 
-/*---------------------------------------------------------------FUNCTIONS IMPLEMENTIONS-------------------------------------------------------*/
+/*
 void str2param (char* result, const char *str){
      for (int i = 0;  i < conversionSize;  i++){
         if (strcmp(str, conversionparam[i].str)==0) { strcpy(result,conversionparam[i].param_code); break;}
     }
 }
 
-void str2Hex (char *result, char *str){         /*function is called only after labels have been saved*/
+void str2Hex (char *result, char *str){         //function is called only after labels have been saved
     int isHex, hex_len = strlen(result);
-    //if (isletter(str[0])) {/*parse as label*/}
+    //if (isletter(str[0])) {//parse as label}
     if (0) {}
     else{ 
         isHex = isHexa(str);
@@ -153,4 +153,4 @@ int isletter(char c){
     if ((c >= 65 && c<= 90 ) || (c>=97 && c<= 122)) {return 1;}
     return 0;
 }
-
+*/

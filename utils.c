@@ -1,13 +1,17 @@
 #include "simulator.h"
 #include "Assembler.h"
 
+typedef enum {data, instruction, irq2, disk, registers} Mode;
+
 //Utils Func Declarations
 int read_from_file(FILE *fp, int len, Mode mode);
 void fill_with_null(int start, int end, Mode mode);
 char cut_string_by_index(char *str, int i);
 int compare (const void * a, const void * b);
-void dec2hexa(char* result, int num);
+void dec2hexa(char* result, int num, int len);
 int hexa2dec(char *hex_rep, int len);
+int write_to_file(FILE *fp, int len, Mode mode);
+void set_line_to_zero(char *line, int len);
 
 
 //Simulator Related Func
@@ -17,23 +21,25 @@ int init_irq2_lst(FILE *fp, char *line, int len);
 int add_to_cmd_lst(Instruction *cmdLst, char *inst);
 int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);
+int write_dmemout(FILE *fp, char *line, int len);
 
 
 int read_from_file(FILE *fp, int len, Mode mode) {
     char *line = malloc(len*sizeof(char));
     int res;
     switch (mode) {
-        case (0): //Read dmemin
+        case (data): //Read dmemin
             res = init_data_lst(fp, line, len);
             break;
-        case (1): //Read imemin
+        case (instruction): //Read imemin
             res = init_cmd_lst(fp, line, len);
             break;
-        case (2): //Read irq2in
+        case (irq2): //Read irq2in
             res = init_irq2_lst(fp, line, len);
             break;
     }
     fill_with_null(res, MAX_INSTRUCTIONS, mode);
+    free(line);
 }
 
 
@@ -141,13 +147,13 @@ int compare (const void * a, const void * b) {
 }
 
 
-void dec2hexa(char* result, int num){
-    int currIdx, hex_len = strlen(result);
+void dec2hexa(char* result, int num, int len){
+    int currIdx;
     if (num != 0) {
         int i =0;
         while (num != 0){
             int tmp = num%16;
-            currIdx = hex_len-1-i;
+            currIdx = len-1-i;
             if (tmp <10) {result[currIdx] = tmp+48;}
             else {result[currIdx] = tmp+55;}
             i++;
@@ -172,3 +178,39 @@ int hexa2dec(char *hex_rep, int len){
     return ans;
 }
 
+
+int write_to_file(FILE *fp, int len, Mode mode) {
+    char *line = malloc((len+1)*sizeof(char));
+    line[len] = '\0';
+    int res;
+    switch (mode) {
+        case (data): //Write dmemout
+            res = write_dmemout(fp, line, len);
+            break;
+        case (registers): //Write imemout
+            res = write_registers(fp, line, len);
+            break;
+        case (irq2): //Write irq2out
+            res = write_irq2out(fp, line, len);
+            break;
+    }
+}
+
+
+int write_dmemout(FILE *fp, char *line, int len) {
+    int i, val;
+    for (i=0; i<MAX_DATA; i++) {
+        set_line_to_zero(line, len);
+        dec2hexa(line, MEM[i], len);
+        fputs(line, fp);
+        fputs("\n", fp);
+    }
+    return 1;
+}
+
+
+void set_line_to_zero(char *line, int len) {
+    for(int i=0; i<len; i++) {
+        line[i] = '0';
+    }
+}

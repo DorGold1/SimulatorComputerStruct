@@ -1,4 +1,3 @@
-#include "simulator.h"
 #include "utils.c"
 
 int main() {
@@ -35,10 +34,7 @@ int main() {
 	//READ DISK - HOW?!?!?!?
 
     //Init the rest of the IO devices
-    monitorFrame = malloc(MONITOR_RES * sizeof(uint8_t *));
-    for (i=0; i<MONITOR_RES; i++) {
-		monitorFrame[i] = calloc(MONITOR_RES, sizeof(uint8_t));
-    }
+    monitorFrame = malloc(MONITOR_RES * MONITOR_RES * sizeof(uint8_t));
     res = main_loop();
 }
 

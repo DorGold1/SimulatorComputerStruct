@@ -18,7 +18,6 @@
 #define SECTOR_SIZE 128
 #define MONITOR_RES 256
 
-typedef enum {data, instruction, irq2, disk} Mode;
 
 typedef struct instruction {
     short op;
@@ -38,7 +37,7 @@ int IORegister[NUM_IOREGISTERS];
 int MEM[MAX_DATA];
 int PC = 0;
 int **diskIO;
-uint8_t **monitorFrame;
+uint8_t *monitorFrame;
 int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
