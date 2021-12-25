@@ -107,7 +107,6 @@ int main_loop() {
         }
         //Update cycle count
         cycles+=1;
-        printf("%d", PC);
         IORegister[8] = cycles;
     }
     return EXIT_SUCCESS;
@@ -126,16 +125,19 @@ void interrupt_handler() {
     int irqState[3];
     update_irqs_state(irqState);
     if((irqState[0] == 1) && (inInterrupt == 0)) { //TIMER INTERRUPT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[1] == 1) && (inInterrupt == 0)) { //DISK IO INTERRUPT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[2] == 1) && (inInterrupt == 0)) { //RETI 2 INTERRUOT
+        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
@@ -205,7 +207,9 @@ void timer_handler() {
 
 
 int run_command(Instruction instruction) {
-    printf("%d" , instruction.op);
+    R[1] = instruction.immediate1;
+    R[2] = instruction.immediate2;
+    printf("%d", instruction.op);
     FILE *fp = fopen(filenames[7],"a");
     write_to_file(fp, TRACE_LEN, trace);
     fclose(fp);
@@ -265,8 +269,10 @@ void run_arithmetic(Instruction instruction, int id) {
 
 
 void run_jump_branch_commands(Instruction instruction, int id) {
-    int mask = 4095;
+    int mask =  1 << 12;
+    mask = mask - 1;
     int program_counter_new_address = R[instruction.rm] & mask;
+    printf("%d", program_counter_new_address);
     if(id == 9) {
         if(R[instruction.rs] == R[instruction.rt]) {
             PC = program_counter_new_address;
