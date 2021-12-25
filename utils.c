@@ -1,5 +1,3 @@
-#include "simulator.h"
-#include "Assembler.h"
 
 //Mode enum for read/write file.
 typedef enum {data, instruction, irq2, disk, registers, trace} Mode;
@@ -10,18 +8,21 @@ int read_from_file(FILE *fp, int len, Mode mode);
 void fill_with_null(int start, int end, Mode mode);
 char cut_string_by_index(char *str, int i);
 int compare (const void * a, const void * b);
+void sign_ext(int *num);
 void dec2hexa(char* result, int num, int len);
 int hexa2dec(char *hex_rep, int len);
 int write_to_file(FILE *fp, int len, Mode mode);
 void set_line_to_zero(char *line, int len);
 int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len);
+int write_str_to_file(FILE *fp, char *line);
+
 
 
 //Simulator Related Func
 int init_data_lst(FILE *fp, char *line, int len);
 int init_cmd_lst(FILE *fp, char *line, int len);
 int init_irq2_lst(FILE *fp, char *line, int len);
-int add_to_cmd_lst(Instruction *cmdLst, char *inst);
+int add_to_inst_lst(char *instruct, char *line);
 int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);
 int write_dmemout(FILE *fp, char *line, int len);
@@ -66,7 +67,7 @@ int init_cmd_lst(FILE *fp, char *line, int len) {
         if (strcmp(line,"\n") == 0) {
             continue;
         }
-        add_to_cmd_lst(cmdLst[i++], line);
+        add_to_inst_lst(instructions[i++], line);
     }
     return i;
 }
@@ -83,29 +84,8 @@ int init_irq2_lst(FILE *fp, char *line, int len) {
     return i;
 }
 
-
-int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
-	char tmp;
-    tmp = cut_string_by_index(inst, 2);	//OP
-    cmdLst -> op = (short)strtol(inst, NULL, 16);
-    inst[2]=tmp;
-    tmp = cut_string_by_index(inst, 3);	//rd
-    cmdLst -> rd = (short)strtol(inst+2, NULL, 16);
-    inst[3]=tmp;
-    tmp = cut_string_by_index(inst, 4);	//rs
-    cmdLst -> rs = (short)strtol(inst+3, NULL, 16);
-    inst[4]=tmp;
-    tmp = cut_string_by_index(inst, 5);	//rt
-    cmdLst -> rt = (short)strtol(inst+4, NULL, 16);
-    inst[5]=tmp;
-    tmp = cut_string_by_index(inst, 6);	//rm
-    cmdLst -> rm = (short)strtol(inst+5, NULL, 16);
-    inst[6]=tmp;
-    tmp = cut_string_by_index(inst, 9);	//imm1
-    cmdLst -> immediate1 = (short)strtol(inst+6, NULL, 16);
-    inst[9]=tmp;						//imm2
-    cmdLst -> immediate2 = (short)strtol(inst+9, NULL, 16);
-    return 1;
+int add_to_inst_lst(char *instruct, char *line) {
+    strcpy(instruct, line);
 }
 
 
@@ -136,7 +116,7 @@ void fill_with_null(int start, int end, Mode mode) {
     }
     if (mode == 1) { //Fill Instruction Arr
         for(i=start; i<end; i++) {
-            cmdLst[i] = NULL;
+            instructions[i] = NULL;
         }
     }
     if (mode == 2) { //Fill Irq2 Arr
@@ -152,6 +132,13 @@ int compare (const void * a, const void * b) {
 }
 
 
+void sign_ext(int *num) {
+    if (*num & 1<<11) {
+        *num = *num | immMask;
+    }
+}
+
+
 void dec2hexa(char* result, int num, int len){
     int currIdx;
     if (num != 0) {
@@ -159,8 +146,8 @@ void dec2hexa(char* result, int num, int len){
         while (num != 0){
             int tmp = num%16;
             currIdx = len-1-i;
-            if (tmp <10) {result[currIdx] = tmp+48;}
-            else {result[currIdx] = tmp+55;}
+            if (tmp <10) {result[currIdx] = (char) tmp+48;}
+            else {result[currIdx] = (char) tmp+55;}
             i++;
             num = num/16;
         }
@@ -208,7 +195,25 @@ int write_dmemout(FILE *fp, char *line, int len) {
 
 
 int write_trace(FILE *fp, char *line, int len) {
+    int j;
+    char *regInHexa = malloc(DATA_LEN*sizeof(char));
+    set_line_to_zero(regInHexa, DATA_LEN);
+    regInHexa[DATA_LEN] = '\0';
+
     set_line_to_zero(line, TRACE_LEN);
+    dec2hexa(line, PC, 3);
+    line[3] = '\0';
+    strcat(line, " ");
+    strcat(line, instructions[PC]);
+    strcat(line, " ");
+    for(j=0; j<REGISTERS_LEN; j++) {
+        dec2hexa(regInHexa, R[j], DATA_LEN-1);
+        strcat(line, regInHexa);
+        strcat(line, " ");
+    }
+    line[TRACE_LEN] = '\0';
+    write_str_to_file(fp, line);
+    int a=3;
 }
 
 

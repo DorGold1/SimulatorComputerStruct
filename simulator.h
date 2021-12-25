@@ -18,7 +18,7 @@
 #define SECTOR_SIZE 128
 #define MONITOR_RES 256
 #define REGISTERS_LEN 16
-#define TRACE_LEN 161
+#define TRACE_LEN 166
 
 
 typedef struct instruction {
@@ -33,22 +33,27 @@ typedef struct instruction {
 
 Instruction **cmdLst;
 
+int immMask = ~(-1 + (1<<12 -1));
+
 //Registers, Memory, IO Devices
 int R[REGISTERS_LEN];
 int IORegister[NUM_IOREGISTERS];
 int MEM[MAX_DATA];
 int PC = 0;
 int **diskIO;
+char **instructions;
 uint8_t *monitorFrame;
 int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;
+char ** filenames;
 
 //cycle timer for disk
 int diskCycleTimer = 0;
 
 //Func Declarations
 int main_loop();
+int add_to_cmd_lst(Instruction *cmdLst, char *inst);
 void update_irq2(int cycle);
 void update_irqs_state(int *irqState);
 void interrupt_handler();

@@ -1,22 +1,28 @@
+#include "simulator.h"
 #include "utils.c"
 
-
-
 int main(int argc, char **argv) {
-    //FilePointers to append to
-    FILE *trace_fp = fopen("trace.txt","w");
     
     int i, res;
     FILE *fp;
     Mode mode;
+    filenames = argv;
+    //Create files
+    fp = fopen(argv[7],"w");
+    fclose(fp);
 
     mode = instruction;
     fp = fopen(argv[1],"r");
+    instructions = malloc(MAX_INSTRUCTIONS * sizeof(char *));
+    for(i=0; i<MAX_INSTRUCTIONS; i++) {
+        instructions[i] = malloc(INSTRUCTION_LEN * sizeof(char));
+    }
+    read_from_file(fp, INSTRUCTION_LEN, mode);
 	cmdLst = malloc(MAX_INSTRUCTIONS * sizeof(Instruction *));
     for(i=0; i<MAX_INSTRUCTIONS; i++) {
         cmdLst[i] = (Instruction *)malloc(sizeof(Instruction *));
+        add_to_cmd_lst(cmdLst[i], instructions[i]);
     }
-    read_from_file(fp, INSTRUCTION_LEN, mode);
 	fclose(fp);
 
     mode = data;
@@ -42,6 +48,37 @@ int main(int argc, char **argv) {
     monitorFrame = malloc(MONITOR_RES * MONITOR_RES * sizeof(uint8_t));
     res = main_loop();
 }
+
+
+int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
+    if (inst == NULL) {
+        cmdLst = NULL;
+        return 1;
+    }
+	char tmp;
+    tmp = cut_string_by_index(inst, 2);	//OP
+    cmdLst -> op = (short)strtol(inst, NULL, 16);
+    inst[2]=tmp;
+    tmp = cut_string_by_index(inst, 3);	//rd
+    cmdLst -> rd = (short)strtol(inst+2, NULL, 16);
+    inst[3]=tmp;
+    tmp = cut_string_by_index(inst, 4);	//rs
+    cmdLst -> rs = (short)strtol(inst+3, NULL, 16);
+    inst[4]=tmp;
+    tmp = cut_string_by_index(inst, 5);	//rt
+    cmdLst -> rt = (short)strtol(inst+4, NULL, 16);
+    inst[5]=tmp;
+    tmp = cut_string_by_index(inst, 6);	//rm
+    cmdLst -> rm = (short)strtol(inst+5, NULL, 16);
+    inst[6]=tmp;
+    tmp = cut_string_by_index(inst, 9);	//imm1
+    cmdLst -> immediate1 = (short)strtol(inst+6, NULL, 16);
+    sign_ext(&(cmdLst -> immediate1));
+    inst[9]=tmp;						//imm2
+    cmdLst -> immediate2 = (short)strtol(inst+9, NULL, 16);
+    return 1;
+}
+
 
 void update_monitor_pixels(){
     if(IORegister[22] == 1){
@@ -169,7 +206,9 @@ void timer_handler() {
 
 int run_command(Instruction instruction) {
     printf("%d" , instruction.op);
-    //write_to_trace_txt(instruction);// TASK - WRITE TO TRACE.TXT LINE WITH PC , INST (12 DIGITS OF INSTRUCTION) AND REGISTERS BEFORE COMMAND - READ DESCRIPTION IN FILE BEFORE! 
+    FILE *fp = fopen(filenames[7],"a");
+    write_to_file(fp, TRACE_LEN, trace);
+    fclose(fp);
     if(instruction.op <= 8) {
         run_arithmetic(instruction,instruction.op);
     }
