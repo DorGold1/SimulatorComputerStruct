@@ -1,6 +1,6 @@
 
 //Mode enum for read/write file.
-typedef enum {data, instruction, irq2, disk, registers, trace} Mode;
+typedef enum {data, instruction, irq2, disk, registers, trace, asmfile} Mode;
 
 
 //Utils Func Declarations
@@ -30,6 +30,12 @@ int write_registers(FILE *fp, char *line, int len);
 int write_trace(FILE *fp, char *line, int len);
 
 
+//Assembler Related Func
+int init_unparsed_instructions(FILE *fp, char *line, int len);
+
+
+
+
 int read_from_file(FILE *fp, int len, Mode mode) {
     char *line = malloc(len*sizeof(char));
     int res;
@@ -43,23 +49,13 @@ int read_from_file(FILE *fp, int len, Mode mode) {
         case (irq2): //Read irq2in
             res = init_irq2_lst(fp, line, len);
             break;
+        case (asmfile): //Read asm file
+            res = init_unparsed_instructions(fp, line, len);
+            break;
     }
     fill_with_null(res, MAX_INSTRUCTIONS, mode);
     free(line);
 }
-
-
-int init_data_lst(FILE *fp, char *line, int len) {
-    int i = 0;
-    while(fgets(line, len, fp)) {
-        if (strcmp(line,"\n") == 0) {
-            continue;
-        }
-        add_to_data_lst(&MEM[i++], line);
-    }
-    return i;
-}
-
 
 int init_cmd_lst(FILE *fp, char *line, int len) {
     int i = 0;
@@ -124,6 +120,7 @@ void fill_with_null(int start, int end, Mode mode) {
         qsort(irq2Lst, start, sizeof(int), compare);
         irq2Lst[start] = -1;
     }
+    if (mode == asmfile) {}
 }
 
 
@@ -242,4 +239,12 @@ void set_line_to_zero(char *line, int len) {
     for(int i=0; i<len; i++) {
         line[i] = '0';
     }
+}
+
+int init_unparsed_instructions(FILE *fp, char *line, int len) {
+    int i = 0;
+    while(fgets(line, len, fp) != NULL) {
+        strcpy(unparsed_instructions[i++], line);
+    }
+    return i;
 }

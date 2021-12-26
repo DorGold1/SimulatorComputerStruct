@@ -6,42 +6,86 @@ imemin.txt is to instruction memory file
 dmemin.txt is the data memory file
 */
 
-/*--------------------------------------------GLOBAL STUFF---------------------------------------------*/
-char **imem_table, **dmem_table;
-label_list *Labels;
+/*---------------------------------------NOTES---------------------------------------
 
-/*---------------------------------------Functions Declarations---------------------------------------*/
-
-void init_DS();
-void verify_input(int argc, char *program_path, FILE *fp);
-
-/*gets line as read from file and getting it ready for parsing*/
-int fix_line_for_parsing(char** broken_res, char *lineBuffer);
-/*Helping Functions*/
-int break_buffer(char **broken_buffer, char *lineBuffer);
-void drop_comment(char **line, int line_len);
-/*end of helping functions*/
-
-/*gets a fixed line from asm file as line and adds it parsed to relevant table*/
-void parseLine(char **line, int lLength, int *pc);
-/*Helping Functions*/
-void parseInstruction(char** line, int pc);
-void parseLabel(char **line, int pc);
-void parseWord (char **line);
-
-void add_line_to_table(char *parsedLine, int hex_address, int is_intruction);
-void update_pc(int *pc, lineType lt);
-/*end of helping functions*/
-
-/*returns the type of line currently being read*/
-lineType get_lineType(int line_len);
-
-/*Labels Queue - Helping Functions*/
-void add_new_label(label_node *new);
-int get_label_pc(char* search_term);
-/*end of helping functions*/
+NEED TO FIX NULL HANDLING IN STRING MALLOC AND STRCPY
+ HANDLE MEMORY LEAKS
+*/
 
 /*---------------------------------------Functions Implementations------------------------------------*/
+
+//FUNCTIONS FROM C HEADER
+
+int isLabel(char *str){
+    int first_ch = (int) str[0];
+    if ((first_ch > 64 && first_ch < 71) || (first_ch >96 && first_ch <103)) {return 1;}
+    return 0;
+}
+
+void str2param (char* result, const char *str){
+     for (int i = 0;  i < conversionSize;  i++){
+        if (strcmp(str, conversionparam[i].str)==0) { strcpy(result,conversionparam[i].param_code); break;}
+    }
+}
+
+void str2Hex (char *result, char *str){
+    //gets hexa num or signed dec num as str--> returns into result its hexa rep
+    int isHex, hex_len = strlen(result);
+    isHex = isHexa(str);
+    if (isHex) {
+        int startIdx = hex_len-isHex;
+        strcpy(result+startIdx, str+2);
+    }
+    else {
+        int two_com_rep = str_to_2complement(str, hex_len);
+        dec2hexa(result, two_com_rep, hex_len);
+    }
+}
+
+int add_imm_to_result(char* result, char* str){
+    if (isLabel(str)) {
+        strcat(result, Label_flag);
+        return 1;
+    }
+    else {
+        char *tmp = (char *) malloc(3*sizeof(char));
+        for (int i=0; i< 3; i++){ tmp[i] = '0';}
+        str2Hex(tmp, str);
+        strcat(result, tmp);
+        return 0;
+    }
+}
+
+void add_op_to_result(char* result, char* str){
+    char *tmp = (char *) calloc(2,sizeof(char));
+    str2param(tmp, str);
+    strcpy(result, tmp);
+}
+
+void add_reg_to_result(char* result, char* str){
+    char *tmp = (char *) calloc(1,sizeof(char));
+    str2param(tmp, str);
+    strcat(result, tmp);
+}
+
+int str_to_2complement(char* str, int hex_len){
+    //gets decimal num as str and returns it as int in 2's complement rep
+    int num = strtol(str, (char**) NULL, 10);
+    int max_bits_idx = (hex_len*4)-1;
+    if (num>=0) { return num;}
+    else {
+        int max_neg = 1<<max_bits_idx;
+        int delta = max_neg+num;
+        return (max_neg | delta);
+    }
+}
+
+int isHexa (char* str){// check 0xnull case ??
+   if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) {return strlen(str+2);}
+   return 0;
+}
+
+//FUNCTIONS FROM C FILE
 
 int fix_line_for_parsing(char **broken_res, char *lineBuffer){
     //gets allocated memory pointer for result
@@ -76,7 +120,7 @@ void parseLine(char **line, int line_len, int *pc){
     switch (lt)
     {
         case LabelOnly:
-            parseLabel(line, *pc);
+            parseLabel(line[0], *pc);
             break;
         case WordOnly:
             parseWord(line);
@@ -118,28 +162,35 @@ void parseInstruction (char **line, int pc){
 
     char *result = (char *) calloc(iEntryLen, sizeof(char));
     //getting the parsed instruction into result
+    int hasLabel = 0;
     for (int i=0; i< 7; i++) {
         if (i==0) { add_op_to_result(result, line[0]);}
         else if (i<5) { add_reg_to_result(result, line[i]);}
-        else { add_imm_to_result(result, line[i]);}//need to set case for label
+        else {
+            hasLabel = add_imm_to_result(result, line[i]);
+            data_node *instruction_node = (data_node *) malloc(sizeof(data_node));
+            make_new_node(instruction_node, line[i], pc);
+            add_to_Queue(instruction_node, 0);
+        }
     }
-    printf("the proccessed command is: %s\n", result);
+    // printf("the proccessed command is: %s\n", result);
     add_line_to_table(result, pc, 1);
 }
 
-void parseLabel(char **line, int pc){
-    label_node *new;
-    int name_len;
+void parseLabel(char *label_name, int pc){
+    if (label_exist(label_name) == 0){
+        data_node *new = (data_node *) malloc(sizeof(data_node));
+        make_new_node(new, label_name, pc);
+        add_to_Queue(new, 1);
+    }
+}
 
-    new = (label_node *) malloc(sizeof(label_node));
-    name_len = strlen(line[0]);
-
+void make_new_node(data_node *new, char *name, int pc){
+    int name_len = strlen(name);
     new->name = (char *) malloc(name_len*sizeof(char));
-    strcpy(new->name, line[0]);
+    strcpy(new->name, name);
     new->pc_num  = pc;
     new->next = NULL;
-
-    add_new_label(new);
 }
 
 void parseWord (char **line){
@@ -156,14 +207,16 @@ void parseWord (char **line){
     add_line_to_table(hex_data, dec_address, 0);
 }
 
-void add_new_label(label_node *new){
-    if (Labels->head == NULL){
-        Labels->head = new;
-        Labels->tail = new;
+void add_to_Queue(data_node *new, int isLabel){
+    Queue *currQ;
+    currQ = isLabel == 1 ? Labels : instructions_with_label; 
+    if (currQ->head == NULL){
+        currQ->head = new;
+        currQ->tail = new;
     }
     else {
-        Labels->tail->next = new;
-        Labels->tail = new;
+        currQ->tail->next = new;
+        currQ->tail = new;
     }
 }
 
@@ -175,7 +228,7 @@ void add_line_to_table(char *parsedLine, int address, int is_intruction){
 }
 
 int get_label_pc(char* search_term){
-    label_node *curr;
+    data_node *curr;
     curr = Labels->head;
     while (curr != NULL) {
         if (strcmp(curr->name, search_term)== 0) return curr->pc_num;
@@ -185,69 +238,94 @@ int get_label_pc(char* search_term){
 }
 
 void update_pc(int *pc, lineType lt){
-    if (lt == InstructionOnly || lt == Label_Instruction) *pc++;
+    if (lt == InstructionOnly || lt == Label_Instruction) *pc = *pc +1;
 }
 
 void init_DS(){
+    unparsed_instructions = (char **) malloc(MAX_ASSEMBLY_INSTRUCTIONS*sizeof(char *));
+    for (int i =0; i< MAX_ASSEMBLY_INSTRUCTIONS; i++) {unparsed_instructions[i] = malloc(MAX_STR_LEN*sizeof(char));}
     imem_table = (char **) malloc(memSize*sizeof(char *));
     for (int i = 0; i< memSize; i++) {imem_table[i] = malloc((iEntryLen+1)*sizeof(char));}
     dmem_table = (char **) malloc(memSize*sizeof(char *));
     for (int i = 0; i< memSize; i++) {dmem_table[i] = malloc((dEntryLen+1)*sizeof(char));}
-    Labels = (label_list *) malloc(sizeof(label_list));
+    Labels = (Queue *) malloc(sizeof(Queue));
     Labels->head = NULL;
     Labels->tail = NULL;
+    instructions_with_label = (Queue *) malloc(sizeof(Queue));
+    instructions_with_label->head = NULL;
+    instructions_with_label->tail = NULL;
 }
 
-void verify_input(int argc, char *program_path, FILE *fp){
-    if (argc != 4) {
-        printf("Invalid amount of input arguments.\n");
-        exit(EXIT_FAILURE);
+int label_exist(char *label_name){
+    data_node *curr = Labels->head;
+    while (curr != NULL){
+        if (strcmp(curr->name, label_name) == 0) return 1;
+        else curr = curr->next;
     }
-    fp = fopen(program_path, "r");
-    if (fp == NULL) {
-        printf("Failed to open %s.\n", program_path);
-        exit(EXIT_FAILURE);
+    return 0;
+}
+
+void update_labled_instructions(){
+    data_node *curr_instruction_node = instructions_with_label->head;
+    char *parsed_instruction, *label_to_find, *imm_to_update, *hexa_pc, *empty_hexa_pc;
+    hexa_pc = (char *) malloc(3*sizeof(char));
+    empty_hexa_pc = (char *) malloc(3*sizeof(char));
+    for (int i = 0; i < 3; i++) {hexa_pc[i] = '0';}
+
+    while (curr_instruction_node != NULL){
+        strcpy(hexa_pc, empty_hexa_pc);                                //empty the pc's hexa rep buffer
+        parsed_instruction = imem_table[curr_instruction_node->pc_num];//get the instruction in hexa from table
+        label_to_find = curr_instruction_node->name;
+        imm_to_update = strstr(parsed_instruction, Label_flag);        //get the position of flag to be replaced
+        //is it possible to have two labels in one instructions?
+        dec2hexa(hexa_pc, get_label_pc(label_to_find), 3);             //get the hexa rep of the pc that will replace the Label_flag
+        for (int i = 0; i < 3; i++) {imm_to_update[i] = hexa_pc[i];}
+        curr_instruction_node = curr_instruction_node->next;
     }
 }
+
 /*--------------------------------------------------MAIN--------------------------------------------*/
 
 int main(int argc, char** argv) {
     /*WORK FLOW*/
     FILE *fp;
-    char *lineBuffer = NULL, **ready_line;
-    int bytes_read, line_len, lineBuffer_size = 0, pc = 0;
-    
+    char **empty_buffer_line, **buffer_line;
+    int line_len, pc = 0;
+    //Init buffers & data structures
+    buffer_line = (char **) malloc(MAX_LINE_LEN*sizeof(char *));
+    empty_buffer_line = (char **) calloc(MAX_LINE_LEN,sizeof(char *));
+    for (int i = 0; i <MAX_LINE_LEN; i++) {empty_buffer_line[i] = (char *) malloc(MAX_STR_LEN*sizeof(char));}
     init_DS();
-    verify_input(argc, argv[1], fp);
-    ready_line = (char **) malloc(MAX_LINE_LEN*sizeof(char *));
-    for (int i =0; i<MAX_LINE_LEN; i++) {ready_line[i] = (char *) calloc(MAX_STR_LEN,sizeof(char));}
 
-    while ((bytes_read = getline(&lineBuffer, &lineBuffer_size, fp)) != -1) {
-        
-        line_len = fix_line_for_parsing(ready_line, lineBuffer);
-        parseLine(ready_line, line_len, &pc);
-            //is it legal?
-        for (int i=0; i<MAX_LINE_LEN; i++) {free(ready_line[i]; ready_line[i]=NULL);}
-        ready_line = NULL;  //suppose to re-init the line
-        // free(ready_line);
+    //Verify inputs
+    if (argc != 4) {
+        printf("Invalid amount of input arguments.\n");
+        exit(EXIT_FAILURE);
     }
-    //verify end of file || error ??
-    if (lineBuffer != NULL) free(lineBuffer);
-    lineBuffer = NULL;  
+    fp = fopen(argv[1], "r");
+    if (fp == NULL) {
+        printf("Failed to open %s.\n", argv[1]);
+        exit(EXIT_FAILURE);
+    }
+    //read from file into local array - sizes need further attention
+    int read_res = read_from_file(fp, MAX_LINE_LEN, asmfile);   //read_res is the amount of lines read
     fclose(fp);
-    //second pass - updating labels
-    //copying tables to files
-    
 
-    /*TESTING-PART MAIN*/
-    // char **broken_line;
-    // char test_line[63] = "	add $sp, $sp, $imm2, $zero, 0, -3		# adjust stack for 3 items";
-    // printf("test line is %s\nits length is %d\n", test_line, strlen(test_line));
-    // fix_line_for_parsing(broken_line, test_line);
-    // printf("result of fixing is:\n");
-    // for (int i =0; i< MAX_LINE_LEN; i++){
-    //     printf("broken at index %d is:\t%s", i, broken_line[i]);
-    // }
-    
-    return 0;
+    //parse lines and add to local tables
+    for (int i =0; i<read_res; i++){
+        memcpy(buffer_line, empty_buffer_line, MAX_LINE_LEN*MAX_STR_LEN*sizeof(char));
+        line_len = fix_line_for_parsing(buffer_line, unparsed_instructions[i]);
+        parseLine(buffer_line, line_len, &pc);
+    }
+
+    //free buffers
+    free(buffer_line);
+    free(empty_buffer_line);
+    buffer_line = NULL;
+    empty_buffer_line = NULL;
+
+    //second loop
+    update_labled_instructions();   
+
+    return EXIT_SUCCESS;
 }
