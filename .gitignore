@@ -8,3 +8,4 @@ dmemin.txt
 imemin.txt
 .vscode/c_cpp_properties.json
 .vscode/tasks.json
+*.txt
