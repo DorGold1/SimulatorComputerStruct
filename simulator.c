@@ -1,4 +1,3 @@
-#include "simulator.h"
 #include "utils.c"
 
 int main(int argc, char **argv) {
@@ -76,6 +75,7 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
     sign_ext(&(cmdLst -> immediate1));
     inst[9]=tmp;						//imm2
     cmdLst -> immediate2 = (short)strtol(inst+9, NULL, 16);
+    sign_ext(&(cmdLst -> immediate2));
     return 1;
 }
 

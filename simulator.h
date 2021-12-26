@@ -18,7 +18,8 @@
 #define SECTOR_SIZE 128
 #define MONITOR_RES 256
 #define REGISTERS_LEN 16
-#define TRACE_LEN 166
+#define TRACE_LEN 161
+#define REG_HEX_LEN 8
 
 
 typedef struct instruction {

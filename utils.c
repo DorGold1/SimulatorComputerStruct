@@ -1,3 +1,5 @@
+#include "simulator.h"
+#include "Assembler.h"
 
 //Mode enum for read/write file.
 typedef enum {data, instruction, irq2, disk, registers, trace, asmfile} Mode;
@@ -56,6 +58,19 @@ int read_from_file(FILE *fp, int len, Mode mode) {
     fill_with_null(res, MAX_INSTRUCTIONS, mode);
     free(line);
 }
+
+
+int init_data_lst(FILE *fp, char *line, int len) {
+    int i = 0;
+    while(fgets(line, len, fp)) {
+        if (strcmp(line,"\n") == 0) {
+            continue;
+        }
+        add_to_data_lst(&MEM[i++], line);
+    }
+    return i;
+}
+
 
 int init_cmd_lst(FILE *fp, char *line, int len) {
     int i = 0;
@@ -137,16 +152,17 @@ void sign_ext(int *num) {
 
 
 void dec2hexa(char* result, int num, int len){
+    unsigned int uNum = (unsigned int) num;
     int currIdx;
-    if (num != 0) {
+    if (uNum != 0) {
         int i =0;
-        while (num != 0){
-            int tmp = num%16;
+        while (uNum != 0){
+            int tmp = uNum%16;
             currIdx = len-1-i;
             if (tmp <10) {result[currIdx] = (char) tmp+48;}
             else {result[currIdx] = (char) tmp+55;}
             i++;
-            num = num/16;
+            uNum = uNum/16;
         }
     }
 }
@@ -193,9 +209,9 @@ int write_dmemout(FILE *fp, char *line, int len) {
 
 int write_trace(FILE *fp, char *line, int len) {
     int j;
-    char *regInHexa = malloc(DATA_LEN*sizeof(char));
-    set_line_to_zero(regInHexa, DATA_LEN);
-    regInHexa[DATA_LEN] = '\0';
+    char *regInHexa = malloc((REG_HEX_LEN+1)*sizeof(char));
+    set_line_to_zero(regInHexa, REG_HEX_LEN);
+    regInHexa[REG_HEX_LEN] = '\0';
 
     set_line_to_zero(line, TRACE_LEN);
     dec2hexa(line, PC, 3);
@@ -207,6 +223,7 @@ int write_trace(FILE *fp, char *line, int len) {
         dec2hexa(regInHexa, R[j], DATA_LEN-1);
         strcat(line, regInHexa);
         strcat(line, " ");
+        set_line_to_zero(regInHexa, REG_HEX_LEN);
     }
     line[TRACE_LEN] = '\0';
     write_str_to_file(fp, line);
