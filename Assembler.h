@@ -6,14 +6,15 @@
 #endif
 
 /*---------------------------------------------------------------Define Constants & Types----------------------------------------------------*/
-#define MAX_ASSEMBLY_INSTRUCTIONS 10000000000
+#define ASM_LINE_MAX 8192
 #define memSize 4096
-#define MAX_STR_LEN 100
+#define ASM_LINE_BUFFER_LEN 1024
+#define MAX_STR_LEN 128
 #define MAX_LINE_LEN 8
 #define conversionSize 38
 #define dEntryLen 8
 #define iEntryLen 12
-#define Label_flag "LBF"
+#define Label_flag "L-L"
 
 typedef struct data_node data_node;
 typedef struct Queue Queue;
@@ -32,53 +33,61 @@ typedef enum {
     imm
 } paramType;
 
-/*---------------------------------------------------------------GLOBAL DATA STRUCTURES-------------------------------------------------------*/
+/*---------------------------------------------------------------GLOBAL DATA-STRUCTURES-------------------------------------------------------*/
 
 char **imem_table, **dmem_table, **unparsed_instructions;
 Queue *Labels, *instructions_with_label;
-/*---------------------------------------------------------------FUNCTIONS & TYPEDEF DECLAREATIONS--------------------------------------------*/
+/*---------------------------------------------------------------FUNCTIONS DECLAREATIONS------------------------------------------------------*/
 
-void str2param (char* result, const char *str);
-void str2Hex (char* result, char *str);
-int isLabel(char *str); /*returns 1 if str is label*/
-int isHexa (char* str); /*returns 0 if str isn't hex rep of number, otherwise returns its length*/
-int str_to_2complement(char* str, int hex_len);  /*get number as a string and last idx of binary rep - returns it's value in 2's complement rep*/
+/*Main Flow - Functions*/
+void init_DS();
+int fix_line_for_parsing(char** broken_res, char *lineBuffer);
+void parseLine(char **line, int lLength, int *pc, int *dtable_size);
+void update_labled_instructions();
+/*-------Main Flow-----*/
+
+/*fix_line_for_parsing sub-Functions*/
+int break_buffer(char **broken_buffer, char *lineBuffer);
+void drop_comment(char **line, int *line_len);
+/*-------fix_line_for_parsing-------*/
+
+/*parseLine sub-Functions*/
+lineType get_lineType(int line_len);
+void parseInstruction(char** line, int pc);
+void parseLabel(char *label_name, int pc);
+void parseWord (char **line, int *dtable_size);
+void update_pc(int *pc, lineType lt);
+void update_dtable_last_idx (int *dtable_size, int curr_address);
+/*-------parseLine------*/
+
+/*parseInstruction sub-Functions*/
 void add_op_to_result(char* result, char* str);
 void add_reg_to_result(char* result, char* str);
 int add_imm_to_result(char* result, char* str);
 
-void init_DS();
 
-/*gets line as read from file and getting it ready for parsing*/
-int fix_line_for_parsing(char** broken_res, char *lineBuffer);
-/*Helping Functions*/
-int break_buffer(char **broken_buffer, char *lineBuffer);
-void drop_comment(char **line, int line_len);
-/*end of helping functions*/
+/*asmLine Fields Parsing Related Functions*/
+// op/reg function
+void str2param (char* result, const char *str);
+// imm functions
+int isLabel(char *str);
+int isHexa (char* str); /*returns 0 if str isn't hex rep of number, otherwise returns its length*/
+int str_to_2complement(char* str, int hex_len);  /*get number as a string and last idx of binary rep - returns it's value in 2's complement rep*/
+void num2hexa (char *result, char *str, int hex_len);
+/*--------asmLine Fields Parsing----------*/
 
-/*gets a fixed line from asm file as line and adds it parsed to relevant table*/
-void parseLine(char **line, int lLength, int *pc);
-/*Helping Functions*/
-void parseInstruction(char** line, int pc);
-void parseLabel(char *label_name, int pc);
-void parseWord (char **line);
-
-void add_line_to_table(char *parsedLine, int hex_address, int is_intruction);
-void update_pc(int *pc, lineType lt);
-/*end of helping functions*/
-
-/*returns the type of line currently being read*/
-lineType get_lineType(int line_len);
-
-/*Queue - Helping Functions*/
-void add_to_Queue(data_node *new, int isLabel);
+/*Queue Related Functions*/
 void make_new_node(data_node *new, char *name, int pc);
-int get_label_pc(char* search_term);
-int label_exist(char *label_name);
-/*end of helping functions*/
+void add_to_Queue(data_node *new, int isLabel);
+data_node* find_node(char* search_term, int LabelQ);
+void free_Queues();
+/*---------Queue---------*/
 
-void update_labled_instructions();
-
+/*Local Tables Related functions*/
+void add_line_to_table(char *parsedLine, int hex_address, int is_intruction);
+void copy_table_to_file(char **table, int table_size, char *file_path);
+void free_table(char **table, int start, int end);
+/*---------Local Tables---------*/
 
 /*---------------------------------------------------------------ENUMS & STRUCTS---------------------------------------------------------------*/
 
