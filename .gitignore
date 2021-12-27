@@ -2,10 +2,7 @@
 .vscode/settings.json
 simulator.exe
 a.exe
-diskin.txt
-irq2in.txt
-dmemin.txt
-imemin.txt
 .vscode/c_cpp_properties.json
 .vscode/tasks.json
+Assembler.exe
 *.txt

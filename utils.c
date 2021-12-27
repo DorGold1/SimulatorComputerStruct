@@ -53,7 +53,8 @@ int read_from_file(FILE *fp, int len, Mode mode) {
             break;
         case (asmfile): //Read asm file
             res = init_unparsed_instructions(fp, line, len);
-            break;
+            free(line);
+            return res;
     }
     fill_with_null(res, MAX_INSTRUCTIONS, mode);
     free(line);
@@ -135,7 +136,7 @@ void fill_with_null(int start, int end, Mode mode) {
         qsort(irq2Lst, start, sizeof(int), compare);
         irq2Lst[start] = -1;
     }
-    if (mode == asmfile) {}
+    if (mode == asmfile) {/*read_from_file function returns before calling this function for mode = asmfile*/}
 }
 
 
@@ -241,6 +242,7 @@ int write_registers(FILE *fp, char *line, int len) {
     return write_int_arr_to_file(fp, line, len, R, REGISTERS_LEN);
 }
 
+
 int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len) {
     int i;
     for (i=0; i<arr_len; i++) {
@@ -259,9 +261,13 @@ void set_line_to_zero(char *line, int len) {
 }
 
 int init_unparsed_instructions(FILE *fp, char *line, int len) {
-    int i = 0;
+    int lines_read = 0;
     while(fgets(line, len, fp) != NULL) {
-        strcpy(unparsed_instructions[i++], line);
+        line[strcspn(line, "\n")] = '\0'; //replacing \n (if exists) in buffer with null-terminating
+        strcpy(unparsed_instructions[lines_read], line);
+        int newlineSize = (strlen(unparsed_instructions[lines_read])+1)*sizeof(char);
+        realloc(unparsed_instructions[lines_read], newlineSize);
+        lines_read++;
     }
-    return i;
+    return lines_read;
 }
