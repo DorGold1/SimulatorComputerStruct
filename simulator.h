@@ -19,7 +19,7 @@
 #define MONITOR_RES 256
 #define REGISTERS_LEN 16
 #define TRACE_LEN 161
-#define LED_LEN 20
+#define TXT_LEN 20
 #define REG_HEX_LEN 8
 
 
@@ -47,7 +47,7 @@ int cycles = 0;
 int leds = 0;
 int **diskIO;
 char **instructions;
-uint8_t *monitorFrame;
+int *monitorFrame;
 int *irq2Lst;
 int irq2Index = 0;
 int inInterrupt = 0;

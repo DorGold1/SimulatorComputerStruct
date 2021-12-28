@@ -7,9 +7,13 @@ int main(int argc, char **argv) {
     Mode mode;
     filenames = argv;
     //Create files
-    fp = fopen(argv[7],"w");
+    fp = fopen(filenames[7],"w");
     fclose(fp);
-    fp = fopen(argv[8],"w");
+    fp = fopen(filenames[8],"w");
+    fclose(fp);
+    fp = fopen(filenames[10],"w");
+    fclose(fp);
+    fp = fopen(filenames[11],"w");
     fclose(fp);
 
     mode = instruction;
@@ -46,7 +50,10 @@ int main(int argc, char **argv) {
     fclose(fp);
 
     //Init the rest of the IO devices
-    monitorFrame = malloc(MONITOR_RES * MONITOR_RES * sizeof(uint8_t));
+    monitorFrame = calloc(MONITOR_RES * MONITOR_RES ,sizeof(int));
+    for (i=0; i<MONITOR_RES * MONITOR_RES; i++) {
+        monitorFrame[i]=0;
+    }
     res = main_loop();
 }
 
@@ -84,9 +91,10 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
 
 void update_monitor_pixels(){
     if(IORegister[22] == 1){
-        uint8_t frame_data = IORegister[21];
+        int frame_data = IORegister[21];
         int frame_address = IORegister[20];
         monitorFrame[frame_address] = frame_data;
+        IORegister[22] == 0;
     }
 }
 
@@ -95,12 +103,12 @@ int main_loop() {
     int oldPC;
 	while(cmdLst[PC]){
         //Handle disk and timer
+        //Handle interrupts
+        interrupt_handler();
         diskIO_handler();
         timer_handler();
         update_irq2(cycles);
         update_monitor_pixels();
-        //Handle interrupts
-        interrupt_handler();
         //Execute current command
         oldPC = PC; 
         run_command(*cmdLst[PC]);
@@ -127,19 +135,16 @@ void interrupt_handler() {
     int irqState[3];
     update_irqs_state(irqState);
     if((irqState[0] == 1) && (inInterrupt == 0)) { //TIMER INTERRUPT
-        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[1] == 1) && (inInterrupt == 0)) { //DISK IO INTERRUPT
-        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
     }
     if((irqState[2] == 1) && (inInterrupt == 0)) { //RETI 2 INTERRUOT
-        printf("interrupt");
         inInterrupt = 1;
         IORegister[7] = PC; //SAVE ADDRESS FOR RETI
         PC = IORegister[6]; //GO TO INTERRUPT - PC = IRQHANDLER
@@ -209,7 +214,6 @@ void timer_handler() {
 int run_command(Instruction instruction) {
     R[1] = instruction.immediate1;
     R[2] = instruction.immediate2;
-    printf("%d", instruction.op);
     FILE *fp = fopen(filenames[7],"a");
     write_to_file(fp, TRACE_LEN, trace);
     fclose(fp);
@@ -226,8 +230,17 @@ int run_command(Instruction instruction) {
         run_IOregister_operation(instruction, instruction.op);
     }
     else if(instruction.op == 21) {
-        //make_regout_txt_file(); // TASK - make file
-        //make_cycles_txt_file(); // TASK - MAKE FILE WITH NUM OF CYCLES.
+        cycles++;
+        fp = fopen(filenames[6],"w");
+        write_to_file(fp, REG_HEX_LEN, registers);
+        fclose(fp);
+        fp = fopen(filenames[9],"w");
+        write_to_file(fp, REG_HEX_LEN, cycle);
+        fclose(fp);
+        fp = fopen(filenames[13],"w");
+        write_to_file(fp, 2, monitor);
+        fclose(fp);
+        
         //make_monitor_txt_file(); // TASK - MAKE FILE FOR MONITOR OUTPUT - EACH ROW IS VALUE IN HEXA, FIRST ROW 0,0 THEN 0,1 .... 1,0 , 1,1 - INDEXES - OUR ARRAY IS FLATTENED.
         exit(1); //determine exit message
     }
@@ -272,7 +285,6 @@ void run_jump_branch_commands(Instruction instruction, int id) {
     int mask =  1 << 12;
     mask = mask - 1;
     int program_counter_new_address = R[instruction.rm] & mask;
-    printf("%d", program_counter_new_address);
     if(id == 9) {
         if(R[instruction.rs] == R[instruction.rt]) {
             PC = program_counter_new_address;
@@ -315,7 +327,7 @@ void run_memory_command(Instruction instruction , int id) {
         R[instruction.rd] = MEM[R[instruction.rs] + R[instruction.rt]] + R[instruction.rm]; 
     }
     else if(id == 17) {
-        MEM[R[instruction.rs] + R[instruction.rt]] = R[instruction.rm] + R[instruction.rt];
+        MEM[R[instruction.rs] + R[instruction.rt]] = R[instruction.rm] + R[instruction.rd];
     }
 }
 
@@ -324,28 +336,27 @@ void run_IOregister_operation(Instruction instruction , int id) {
     if(id == 18) {
         inInterrupt = 0;
         PC = IORegister[7];
+        return;
     }
-    FILE *fp = fopen(filenames[8],"a");
+    FILE *fp;
+    fp = fopen(filenames[8],"a");
     write_to_file(fp, TRACE_LEN, hwregtrace);
     fclose(fp);
     if(id == 19) { //READ FROM IO REGISTER
         R[instruction.rd] = IORegister[R[instruction.rs] + R[instruction.rt]];
     }
     else if(id == 20) { // WRITE TO IO REGISTER
+        IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
         if(R[instruction.rs]+R[instruction.rt] == 9){
-            IORegister[9] = R[instruction.rm];
             fp = fopen(filenames[10],"a");
-            write_to_file(fp, LED_LEN, led);
+            write_to_file(fp, TXT_LEN, led);
             fclose(fp);
-            //write_to_led_file();// TASK - WRITE TO LED FILE A LINE WITH CYCLE NUM , NEW LED VALUE.
         }
         if(R[instruction.rs]+R[instruction.rt] == 10){
-            fp = fopen(filenames[10],"a");
-            write_to_file(fp, LED_LEN, led);
+            fp = fopen(filenames[11],"a");
+            write_to_file(fp, TXT_LEN, sevenseg);
             fclose(fp);
-            //write_to_seven_seg_display_file(); // TASK - WRITE TO DISPLAY7SEG.TXT THE CYCLE NUM , NEW DISPLAY VALUE
         }
-        IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
     }
 
 }

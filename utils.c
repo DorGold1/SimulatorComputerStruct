@@ -2,7 +2,7 @@
 #include "Assembler.h"
 
 //Mode enum for read/write file.
-typedef enum {data, instruction, irq2, disk, registers, trace, asmfile, hwregtrace, led, } Mode;
+typedef enum {data, instruction, irq2, disk, registers, trace, asmfile, hwregtrace, led, sevenseg, cycle, monitor} Mode;
 
 
 //Utils Func Declarations
@@ -31,8 +31,9 @@ int write_dmemout(FILE *fp, char *line, int len);
 int write_registers(FILE *fp, char *line, int len);
 int write_trace(FILE *fp, char *line, int len);
 int write_hwregtrace(FILE *fp, char *line, int len);
-int write_led(FILE *fp, char *line, int len);
-
+int write_led_7seg(FILE *fp, char *line, int len, int IORegIndex);
+int write_cycle(FILE *fp, char *line, int len);
+int write_monitor(FILE *fp, char *line, int len);
 
 //Assembler Related Func
 int init_unparsed_instructions(FILE *fp, char *line, int len);
@@ -203,9 +204,19 @@ int write_to_file(FILE *fp, int len, Mode mode) {
             break;
         case (hwregtrace):
             res = write_hwregtrace(fp, line, len);
+            break;
         case (led):
-            res = write_led(fp, line, len);
-
+            res = write_led_7seg(fp, line, len, 9);
+            break;
+        case (sevenseg):
+            res = write_led_7seg(fp, line, len, 10);
+            break;
+        case (cycle):
+            res = write_cycle(fp, line, len);
+            break;
+        case (monitor):
+            res = write_monitor(fp, line, len);
+            break;
     }
     free(line);
 }
@@ -234,7 +245,7 @@ int write_trace(FILE *fp, char *line, int len) {
         strcat(line, " ");
         set_line_to_zero(regInHexa, REG_HEX_LEN);
     }
-    line[TRACE_LEN] = '\0';
+    line[TRACE_LEN-1] = '\0';
     write_str_to_file(fp, line);
     free(regInHexa);
 }
@@ -248,7 +259,7 @@ int write_hwregtrace(FILE *fp, char *line, int len) {
     itoa(cycles, line, 10);    
     if (inst.op == 19) {
         strcat(line, " READ ");
-        dec2hexa(regInHexa, R[inst.rt], REG_HEX_LEN);
+        dec2hexa(regInHexa, R[inst.rd], REG_HEX_LEN);
     }
     else if (inst.op == 20) {
         strcat(line, " WRITE ");
@@ -262,16 +273,22 @@ int write_hwregtrace(FILE *fp, char *line, int len) {
 }
 
 
-int write_led(FILE *fp, char *line, int len) {
+int write_led_7seg(FILE *fp, char *line, int len, int IORegIndex) {
     char *regInHexa = malloc((REG_HEX_LEN+1)*sizeof(char));
     set_line_to_zero(regInHexa, REG_HEX_LEN);
     regInHexa[REG_HEX_LEN] = '\0';
     itoa(cycles, line, 10);    
     strcat(line, " ");
-    dec2hexa(regInHexa, IORegister[9], REG_HEX_LEN);
+    dec2hexa(regInHexa, IORegister[IORegIndex], REG_HEX_LEN);
     strcat(line, regInHexa);
     write_str_to_file(fp, line);
     free(regInHexa);
+}
+
+
+int write_cycle(FILE *fp, char *line, int len) {
+    itoa(cycles, line, 10);  
+    write_str_to_file(fp, line);
 }
 
 
@@ -282,8 +299,14 @@ int write_str_to_file(FILE *fp, char *line) {
 
 
 int write_registers(FILE *fp, char *line, int len) {
-    return write_int_arr_to_file(fp, line, len, R, REGISTERS_LEN);
+    return write_int_arr_to_file(fp, line, len, R+3, REGISTERS_LEN-3);
 }
+
+
+int write_monitor(FILE *fp, char *line, int len) {
+    return write_int_arr_to_file(fp, line, len, monitorFrame, MONITOR_RES * MONITOR_RES);
+}
+
 
 
 int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len) {
