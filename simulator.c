@@ -9,6 +9,8 @@ int main(int argc, char **argv) {
     //Create files
     fp = fopen(argv[7],"w");
     fclose(fp);
+    fp = fopen(argv[8],"w");
+    fclose(fp);
 
     mode = instruction;
     fp = fopen(argv[1],"r");
@@ -90,7 +92,7 @@ void update_monitor_pixels(){
 
 
 int main_loop() {
-    int oldPC, cycles = 0;
+    int oldPC;
 	while(cmdLst[PC]){
         //Handle disk and timer
         diskIO_handler();
@@ -323,20 +325,27 @@ void run_IOregister_operation(Instruction instruction , int id) {
         inInterrupt = 0;
         PC = IORegister[7];
     }
-    else if(id == 19) { //READ FROM IO REGISTER
+    FILE *fp = fopen(filenames[8],"a");
+    write_to_file(fp, TRACE_LEN, hwregtrace);
+    fclose(fp);
+    if(id == 19) { //READ FROM IO REGISTER
         R[instruction.rd] = IORegister[R[instruction.rs] + R[instruction.rt]];
-        //write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
     }
-    else if(id == 20) { // WRITE TI IO REGISTER
+    else if(id == 20) { // WRITE TO IO REGISTER
         if(R[instruction.rs]+R[instruction.rt] == 9){
+            IORegister[9] = R[instruction.rm];
+            fp = fopen(filenames[10],"a");
+            write_to_file(fp, LED_LEN, led);
+            fclose(fp);
             //write_to_led_file();// TASK - WRITE TO LED FILE A LINE WITH CYCLE NUM , NEW LED VALUE.
         }
         if(R[instruction.rs]+R[instruction.rt] == 10){
+            fp = fopen(filenames[10],"a");
+            write_to_file(fp, LED_LEN, led);
+            fclose(fp);
             //write_to_seven_seg_display_file(); // TASK - WRITE TO DISPLAY7SEG.TXT THE CYCLE NUM , NEW DISPLAY VALUE
         }
-
         IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
-        //write_to_hregtrace_txt(instruction);// TASK - WRITE TO HREGTRACE.TXT FILE - CYCLE_NUM , READ OR WRITE OP - DEPENDS ON ID , NAME OF REGISTER FROM TABLE , DATA TO WRITE \ READ.
     }
 
 }

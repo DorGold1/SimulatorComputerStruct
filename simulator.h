@@ -19,6 +19,7 @@
 #define MONITOR_RES 256
 #define REGISTERS_LEN 16
 #define TRACE_LEN 161
+#define LED_LEN 20
 #define REG_HEX_LEN 8
 
 
@@ -39,8 +40,11 @@ int immMask = ~(-1 + (1<<12 -1));
 //Registers, Memory, IO Devices
 int R[REGISTERS_LEN];
 int IORegister[NUM_IOREGISTERS];
+char IORegNames[NUM_IOREGISTERS][NUM_IOREGISTERS] = {"irq0enable", "irq1enable", "irq2enable", "irq0status", "irq1status" , "irq2status", "irqhandler", "irqreturn", "clks" , "leds", "display7seg", "timerenable", "timercurrent", "timermax", "diskcmd", "disksector", "diskbuffer", "diskstatus", "NULL", "NULL", "monitoraddr", "monitordata", "monitorcmd"};
 int MEM[MAX_DATA];
 int PC = 0;
+int cycles = 0;
+int leds = 0;
 int **diskIO;
 char **instructions;
 uint8_t *monitorFrame;

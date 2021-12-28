@@ -2,7 +2,7 @@
 #include "Assembler.h"
 
 //Mode enum for read/write file.
-typedef enum {data, instruction, irq2, disk, registers, trace, asmfile} Mode;
+typedef enum {data, instruction, irq2, disk, registers, trace, asmfile, hwregtrace, led, } Mode;
 
 
 //Utils Func Declarations
@@ -30,6 +30,8 @@ int add_to_irq2_lst(int *irq2, char *data);
 int write_dmemout(FILE *fp, char *line, int len);
 int write_registers(FILE *fp, char *line, int len);
 int write_trace(FILE *fp, char *line, int len);
+int write_hwregtrace(FILE *fp, char *line, int len);
+int write_led(FILE *fp, char *line, int len);
 
 
 //Assembler Related Func
@@ -132,8 +134,8 @@ void fill_with_null(int start, int end, Mode mode) {
         }
     }
     if (mode == 2) { //Fill Irq2 Arr
-        realloc(irq2Lst, (++start)*sizeof(int));
-        qsort(irq2Lst, start, sizeof(int), compare);
+        realloc(irq2Lst, (start+1)*sizeof(int));
+        qsort(irq2Lst, start++, sizeof(int), compare);
         irq2Lst[start] = -1;
     }
     if (mode == asmfile) {/*read_from_file function returns before calling this function for mode = asmfile*/}
@@ -199,7 +201,13 @@ int write_to_file(FILE *fp, int len, Mode mode) {
         case (trace):
             res = write_trace(fp, line, len);
             break;
+        case (hwregtrace):
+            res = write_hwregtrace(fp, line, len);
+        case (led):
+            res = write_led(fp, line, len);
+
     }
+    free(line);
 }
 
 
@@ -221,14 +229,49 @@ int write_trace(FILE *fp, char *line, int len) {
     strcat(line, instructions[PC]);
     strcat(line, " ");
     for(j=0; j<REGISTERS_LEN; j++) {
-        dec2hexa(regInHexa, R[j], DATA_LEN-1);
+        dec2hexa(regInHexa, R[j], REG_HEX_LEN);
         strcat(line, regInHexa);
         strcat(line, " ");
         set_line_to_zero(regInHexa, REG_HEX_LEN);
     }
     line[TRACE_LEN] = '\0';
     write_str_to_file(fp, line);
-    int a=3;
+    free(regInHexa);
+}
+
+
+int write_hwregtrace(FILE *fp, char *line, int len) {
+    Instruction inst = *cmdLst[PC];
+    char *regInHexa = malloc((REG_HEX_LEN+1)*sizeof(char));
+    set_line_to_zero(regInHexa, REG_HEX_LEN);
+    regInHexa[REG_HEX_LEN] = '\0';
+    itoa(cycles, line, 10);    
+    if (inst.op == 19) {
+        strcat(line, " READ ");
+        dec2hexa(regInHexa, R[inst.rt], REG_HEX_LEN);
+    }
+    else if (inst.op == 20) {
+        strcat(line, " WRITE ");
+        dec2hexa(regInHexa, R[inst.rm], REG_HEX_LEN);
+    }
+    strcat(line, IORegNames[R[inst.rs]+R[inst.rt]]);
+    strcat(line, " ");
+    strcat(line, regInHexa);
+    write_str_to_file(fp, line);
+    free(regInHexa);
+}
+
+
+int write_led(FILE *fp, char *line, int len) {
+    char *regInHexa = malloc((REG_HEX_LEN+1)*sizeof(char));
+    set_line_to_zero(regInHexa, REG_HEX_LEN);
+    regInHexa[REG_HEX_LEN] = '\0';
+    itoa(cycles, line, 10);    
+    strcat(line, " ");
+    dec2hexa(regInHexa, IORegister[9], REG_HEX_LEN);
+    strcat(line, regInHexa);
+    write_str_to_file(fp, line);
+    free(regInHexa);
 }
 
 
