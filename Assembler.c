@@ -14,7 +14,7 @@ int isLabel(char *str){
     //returns 1 if str is label (labels starts with a letter)
 
     int first_ch = (int) str[0];
-    if ((first_ch > 64 && first_ch < 71) || (first_ch >96 && first_ch <103)) {return 1;}
+    if ((first_ch > 64 && first_ch < 91) || (first_ch >96 && first_ch <123)) {return 1;}
     return 0;
 }
 
