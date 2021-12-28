@@ -169,7 +169,7 @@ void write_to_disk(int* disk_sector, int* mem_buffer){
 void diskIO_handler() {
     int type_of_operation, sector, buffer;
     type_of_operation = IORegister[14];
-    if((IORegister[14] != 0) & IORegister[17] == 0) { //Disk has a command that needs to be done and he is free.
+    if((type_of_operation != 0) & IORegister[17] == 0) { //Disk has a command that needs to be done and he is free.
         IORegister[17] = 1;
         diskCycleTimer = 0; //INITATE TIMER
         sector = IORegister[15];
@@ -181,26 +181,24 @@ void diskIO_handler() {
             write_to_disk(diskIO[sector], &MEM[buffer]);
         }
     }
-    else if(IORegister[17] == 0){//disk is not free.
+    else if(IORegister[17] == 1){//disk is not free.
         if(diskCycleTimer == 1023) { // FREE IO DISK
             IORegister[4] = 1; //IRQ STATUS
             IORegister[14] = 0; //DISK CMD
             IORegister[17] = 0; //DISK STATUS
         }
-        if(IORegister[17] == 1) { //TIMER IS STILL BUSY LET'S INCREMENT TIMER
-            diskCycleTimer += 1;
-        }
+        diskCycleTimer += 1;
     }
 }
 
 
 void timer_handler() {
+    if(IORegister[11] == 1) { //check if timer is enabled
+        IORegister[12] += 1; //TIMER CURRENT += 1
+    }
     if(IORegister[12] > IORegister[13]) {
         IORegister[12] = 0; // TIMER CURRENT = 0
         IORegister[3] = 1; //turn on irq0 bit for timer there is interrupt to handle. 
-    }
-    if(IORegister[11]) { //check if timer is enabled
-        IORegister[12] += 1; //TIMER CURRENT += 1
     }
     ////////END CHECK FOR TIMER INTERRUPT
 }
