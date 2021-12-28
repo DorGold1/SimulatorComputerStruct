@@ -2,12 +2,10 @@
 
 /*---------------------------------------NOTES FOR SELF---------------------------------------
 
-memory leaks
- isHexa - case of 0xNULL
- str_to_2complement - is integer overflow possible ?
- main - sizes of buffers
- main - should exit on errors ?
- saving data - converting 3 bits hexa into bits hexa
+memory leaks ?
+str_to_2complement - is integer overflow possible ?
+main - sizes of buffers
+main - should exit on errors ?
 */
 
 /*---------------------------------------Functions Implementations------------------------------------*/
@@ -198,24 +196,31 @@ void parseLabel(char *label_name, int pc){
 
 void parseWord (char **line, int *dtable_last_idx){
     char *address, *data, hex_address[13], hex_data[dEntryLen+1];
-    int dec_address;
+    int dec_address, dec_data, data_hex_len, max_negative;
     address = line[1];
     data = line[2];
 
-    // hex_data = (char *) calloc(dEntryLen+1, sizeof(char));
     for (int i = 0; i <dEntryLen; i++) {hex_data[i] = '0';}
-    // hex_address = (char *) calloc(13,sizeof(char));
     for (int i = 0; i <12; i++) {hex_address[i] = '0';}
-
-    num2hexa(hex_data, data, 8);
+    
+    //getting decimal value of address
     num2hexa(hex_address, address, 12);
     dec_address = hexa2dec(hex_address, 12);
 
+    //getting hexa value of data
+    if((data_hex_len = isHexa(data)) != 0){
+        //data is hexa
+        dec_data = hexa2dec(&data[2], data_hex_len);
+        max_negative = 1<<(data_hex_len*4-1);
+            //in case data need sign extention (last bit in binary rep is set)
+        if (dec_data & max_negative) {for (int i = 0; i <dEntryLen-data_hex_len; i++) {hex_data[i] = 'F';}}
+    }
+    //data is decimal
+    else {dec_data = (int) strtol(data, NULL, 10);}
+    dec2hexa(hex_data, dec_data, dEntryLen);
+
     add_line_to_table(hex_data, dec_address, 0);
     update_dtable_last_idx(dtable_last_idx, dec_address);
-
-    // free(hex_data);
-    // free(hex_address);
 }
 
 void parseInstruction (char **line, int pc){
@@ -355,9 +360,7 @@ int main(int argc, char** argv) {
     int line_len, lines_read_from_asm, pc = 0, dtable_last_idx = 0;
     
     //Init buffers & data structures
-    // buffer_line = (char **) malloc(MAX_LINE_LEN*sizeof(char *));
     for (int i = 0; i <MAX_LINE_LEN; i++) {buffer_line[i] = (char *) malloc(MAX_STR_LEN*sizeof(char));}
-    // empty_buffer_field = (char *) calloc(MAX_LINE_LEN,sizeof(char));
     init_DS();
 
     //Verify inputs
@@ -383,8 +386,6 @@ int main(int argc, char** argv) {
     
     //free buffers & local copy of asm file
     free_table(buffer_line, 0, MAX_LINE_LEN);
-    // free(buffer_line); buffer_line = NULL;
-    // free(empty_buffer_field); empty_buffer_field = NULL;
     free_table(unparsed_instructions, 0, lines_read_from_asm);
     free (unparsed_instructions); unparsed_instructions = NULL;
 

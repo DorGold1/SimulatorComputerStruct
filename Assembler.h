@@ -8,8 +8,8 @@
 /*---------------------------------------------------------------Define Constants & Types----------------------------------------------------*/
 #define ASM_LINE_MAX 8192
 #define memSize 4096
-#define ASM_LINE_BUFFER_LEN 1024
-#define MAX_STR_LEN 128
+#define ASM_LINE_BUFFER_LEN 500
+#define MAX_STR_LEN 32
 #define MAX_LINE_LEN 8
 #define conversionSize 38
 #define dEntryLen 8
