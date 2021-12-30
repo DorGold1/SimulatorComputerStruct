@@ -10,7 +10,7 @@
 #include <limits.h>
 
 #define INSTRUCTION_LEN 13
-#define DATA_LEN 9
+#define DATA_LEN 8
 #define MAX_DATA 4096
 #define MAX_INSTRUCTIONS 4096
 #define NUM_IOREGISTERS 23
@@ -42,10 +42,12 @@ int R[REGISTERS_LEN];
 int IORegister[NUM_IOREGISTERS];
 char IORegNames[NUM_IOREGISTERS][NUM_IOREGISTERS] = {"irq0enable", "irq1enable", "irq2enable", "irq0status", "irq1status" , "irq2status", "irqhandler", "irqreturn", "clks" , "leds", "display7seg", "timerenable", "timercurrent", "timermax", "diskcmd", "disksector", "diskbuffer", "diskstatus", "NULL", "NULL", "monitoraddr", "monitordata", "monitorcmd"};
 int MEM[MAX_DATA];
+int dataMaxIndex = 0;
 int PC = 0;
 int cycles = 0;
 int leds = 0;
-int **diskIO;
+int *diskIO;
+int diskMaxIndex = 0;
 char **instructions;
 int *monitorFrame;
 int *irq2Lst;
@@ -69,5 +71,5 @@ void run_arithmetic(Instruction instruction, int id);
 void run_jump_branch_commands(Instruction instruction, int id);
 void run_memory_command(Instruction instruction , int id);
 void run_IOregister_operation(Instruction instruction , int id);
-void write_from_disk(int* disk_sector, int* mem_buffer);
-void read_from_disk(int* disk_sector, int* mem_buffer);
+void write_to_disk(int* disk_sector, int* mem_buffer, int sector);
+void read_from_disk(int* disk_sector, int* mem_buffer, int buffer);

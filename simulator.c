@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     fclose(fp);
 
     mode = instruction;
-    fp = fopen(argv[1],"r");
+    fp = fopen(filenames[1],"r");
     instructions = malloc(MAX_INSTRUCTIONS * sizeof(char *));
     for(i=0; i<MAX_INSTRUCTIONS; i++) {
         instructions[i] = malloc(INSTRUCTION_LEN * sizeof(char));
@@ -31,21 +31,19 @@ int main(int argc, char **argv) {
 	fclose(fp);
 
     mode = data;
-    fp = fopen(argv[2],"r");
-	read_from_file(fp, DATA_LEN, mode);
+    fp = fopen(filenames[2],"r");
+	read_from_file(fp, DATA_LEN+1, mode);
     fclose(fp);
 
 	mode = disk;
-    fp = fopen(argv[3],"r");
-    diskIO = malloc(NUM_SECTORS * sizeof(int *));
-    for (i=0; i<NUM_SECTORS; i++) {
-		diskIO[i] = calloc(SECTOR_SIZE, sizeof(int));
-    }
-	//READ DISK - HOW?!?!?!?
+    diskIO = calloc(NUM_SECTORS * SECTOR_SIZE ,sizeof(int));
+    fp = fopen(filenames[3],"r");
+	read_from_file(fp, NUM_SECTORS * SECTOR_SIZE, disk);
+    fclose(fp);
 
 	mode = irq2;
     irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
-    fp = fopen(argv[4],"r");
+    fp = fopen(filenames[4],"r");
     read_from_file(fp, INSTRUCTION_LEN, mode);
     fclose(fp);
 
@@ -158,17 +156,23 @@ void update_irqs_state(int *irqState) {
     irqState[2] = IORegister[2] & IORegister[5];
 }
 
-void read_from_disk(int* disk_sector, int* mem_buffer){ //read from disk to mem
+void read_from_disk(int* disk_sector, int* mem_buffer, int buffer){ //read from disk to mem
     int i;
     for(i = 0 ; i < SECTOR_SIZE ; i++){
         mem_buffer[i] = disk_sector[i];
+        if (disk_sector[i]!=0) {
+            dataMaxIndex = get_max(dataMaxIndex, buffer+i);
+        }
     }
 }
 
-void write_to_disk(int* disk_sector, int* mem_buffer){
+void write_to_disk(int* disk_sector, int* mem_buffer, int sector){
     int i;
     for(i = 0 ; i < SECTOR_SIZE ; i++){
         disk_sector[i] = mem_buffer[i];
+        if (mem_buffer[i]!=0) {
+            diskMaxIndex = get_max(diskMaxIndex, sector + i);
+        }
     }
 }
 
@@ -181,11 +185,13 @@ void diskIO_handler() {
         diskCycleTimer = 0; //INITATE TIMER
         sector = IORegister[15];
         buffer = IORegister[16];
+        //If fails, can't write/read disk sector to/from this address - program crashes.
+        assert(buffer<MAX_DATA-SECTOR_SIZE);
         if(type_of_operation == 1) {//read operation...
-            read_from_disk(diskIO[sector], &MEM[buffer]);
+            read_from_disk(&diskIO[sector], &MEM[buffer], buffer);
         }
-        else{
-            write_to_disk(diskIO[sector], &MEM[buffer]);
+        else{//write operation...
+            write_to_disk(&diskIO[sector], &MEM[buffer], sector);
         }
     }
     else if(IORegister[17] == 1){//disk is not free.
@@ -231,6 +237,12 @@ int run_command(Instruction instruction) {
     }
     else if(instruction.op == 21) {
         cycles++;
+        fp = fopen(filenames[5],"w");
+        write_to_file(fp, DATA_LEN, data);
+        fclose(fp);
+        fp = fopen(filenames[12],"w");
+        write_to_file(fp, DATA_LEN, disk);
+        fclose(fp);
         fp = fopen(filenames[6],"w");
         write_to_file(fp, REG_HEX_LEN, registers);
         fclose(fp);
@@ -328,6 +340,7 @@ void run_memory_command(Instruction instruction , int id) {
     }
     else if(id == 17) {
         MEM[R[instruction.rs] + R[instruction.rt]] = R[instruction.rm] + R[instruction.rd];
+        dataMaxIndex = get_max(dataMaxIndex, R[instruction.rs] + R[instruction.rt]);
     }
 }
 

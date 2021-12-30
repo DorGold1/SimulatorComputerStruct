@@ -17,16 +17,18 @@ int write_to_file(FILE *fp, int len, Mode mode);
 void set_line_to_zero(char *line, int len);
 int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len);
 int write_str_to_file(FILE *fp, char *line);
-
+int get_max(int a, int b);
 
 
 //Simulator Related Func
+int init_disk_lst(FILE *fp, char *line, int len);
 int init_data_lst(FILE *fp, char *line, int len);
 int init_cmd_lst(FILE *fp, char *line, int len);
 int init_irq2_lst(FILE *fp, char *line, int len);
 int add_to_inst_lst(char *instruct, char *line);
 int add_to_data_lst(int *mem, char *data);
 int add_to_irq2_lst(int *irq2, char *data);
+int write_diskout(FILE *fp, char *line, int len);
 int write_dmemout(FILE *fp, char *line, int len);
 int write_registers(FILE *fp, char *line, int len);
 int write_trace(FILE *fp, char *line, int len);
@@ -54,13 +56,31 @@ int read_from_file(FILE *fp, int len, Mode mode) {
         case (irq2): //Read irq2in
             res = init_irq2_lst(fp, line, len);
             break;
+        case (disk):
+            res = init_disk_lst(fp, line, len);
+            break;
         case (asmfile): //Read asm file
             res = init_unparsed_instructions(fp, line, len);
-            free(line);
-            return res;
+            break;
     }
     fill_with_null(res, MAX_INSTRUCTIONS, mode);
     free(line);
+}
+
+
+int init_disk_lst(FILE *fp, char *line, int len) {
+    int i = 0;
+    while(fgets(line, len, fp)) {
+        if (strcmp(line,"\n") == 0) {
+            continue;
+        }
+        add_to_data_lst(&diskIO[i], line);
+        if (diskIO[i]!=0) {
+            diskMaxIndex = i+1;
+        }
+        i++;
+    }
+    return i;
 }
 
 
@@ -70,7 +90,12 @@ int init_data_lst(FILE *fp, char *line, int len) {
         if (strcmp(line,"\n") == 0) {
             continue;
         }
-        add_to_data_lst(&MEM[i++], line);
+        add_to_data_lst(&MEM[i], line);
+        if (MEM[i]!=0) {
+            
+            dataMaxIndex = i+1;
+        }
+        i++;
     }
     return i;
 }
@@ -124,17 +149,22 @@ char cut_string_by_index(char *str, int i) {
 
 void fill_with_null(int start, int end, Mode mode) {
     int i;
-    if (mode == 0) { //Fill Data Arr
+    if (mode == data) { //Fill Data Arr
         for(i=start; i<end; i++) {
 			MEM[i] = 0;
         }
     }
-    if (mode == 1) { //Fill Instruction Arr
+    if(mode == disk) {
+        for(i=start; i<end; i++) {
+			diskIO[i] = 0;
+        }
+    }
+    if (mode == instruction) { //Fill Instruction Arr
         for(i=start; i<end; i++) {
             instructions[i] = NULL;
         }
     }
-    if (mode == 2) { //Fill Irq2 Arr
+    if (mode == irq2) { //Fill Irq2 Arr
         realloc(irq2Lst, (start+1)*sizeof(int));
         qsort(irq2Lst, start++, sizeof(int), compare);
         irq2Lst[start] = -1;
@@ -188,6 +218,14 @@ int hexa2dec(char *hex_rep, int len){
 }
 
 
+int get_max(int a, int b) {
+    if (a>=b) {
+        return a;
+    }
+    return b;
+}
+
+
 int write_to_file(FILE *fp, int len, Mode mode) {
     char *line = malloc((len+1)*sizeof(char));
     line[len] = '\0';
@@ -195,6 +233,9 @@ int write_to_file(FILE *fp, int len, Mode mode) {
     switch (mode) {
         case (data): //Write dmemout
             res = write_dmemout(fp, line, len);
+            break;
+        case (disk):
+            res = write_diskout(fp, line, len);
             break;
         case (registers): //Write imemout
             res = write_registers(fp, line, len);
@@ -222,8 +263,13 @@ int write_to_file(FILE *fp, int len, Mode mode) {
 }
 
 
+int write_diskout(FILE *fp, char *line, int len) {
+    return write_int_arr_to_file(fp, line, len, diskIO, diskMaxIndex);
+}
+
+
 int write_dmemout(FILE *fp, char *line, int len) {
-    return write_int_arr_to_file(fp, line, len, MEM, MAX_DATA);
+    return write_int_arr_to_file(fp, line, len, MEM, dataMaxIndex);
 }
 
 
