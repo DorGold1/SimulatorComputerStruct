@@ -1,12 +1,58 @@
-#include "utils.c"
+#include "simulatorutils.c"
 
+/*----------------------------------------------------------------INIT FLOW----------------------------------------------------------------*/
 int main(int argc, char **argv) {
     
-    int i, res;
+    int i;
     FILE *fp;
-    Mode mode;
     filenames = argv;
-    //Create files
+    //Create txt files for appending
+    init_txt_files();
+
+    //Reading Instructions Flow
+    fp = fopen(filenames[1],"r");
+    instructions = malloc(MAX_INSTRUCTIONS * sizeof(char *));
+    for(i=0; i<MAX_INSTRUCTIONS; i++) {
+        instructions[i] = malloc(INSTRUCTION_LEN * sizeof(char));
+    }
+    read_from_file(fp, INSTRUCTION_LEN, instruction);
+	cmdLst = malloc(MAX_INSTRUCTIONS * sizeof(Instruction *));
+    for(i=0; i<MAX_INSTRUCTIONS; i++) {
+        cmdLst[i] = (Instruction *)malloc(sizeof(Instruction *));
+        add_to_cmd_lst(cmdLst[i], instructions[i]);
+    }
+	fclose(fp);
+
+    //Reading dmemin Flow
+    fp = fopen(filenames[2],"r");
+	read_from_file(fp, REG_HEX_LEN+1, data);
+    fclose(fp);
+
+    //Reading disk Flow
+    diskIO = calloc(NUM_SECTORS * SECTOR_SIZE ,sizeof(int));
+    fp = fopen(filenames[3],"r");
+	read_from_file(fp, NUM_SECTORS * SECTOR_SIZE, disk);
+    fclose(fp);
+
+    //Reading irq2 Flow
+    irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
+    fp = fopen(filenames[4],"r");
+    read_from_file(fp, INSTRUCTION_LEN, irq2);
+    fclose(fp);
+
+    //Initializing the rest of the IO devices
+    monitorFrame = calloc(MONITOR_RES * MONITOR_RES ,sizeof(int));
+    for (i=0; i<MONITOR_RES * MONITOR_RES; i++) {
+        monitorFrame[i]=0;
+    }
+    
+    //Run main_loop - start executing commands.
+    main_loop();
+}
+
+
+void init_txt_files() {
+    FILE *fp;
     fp = fopen(filenames[7],"w");
     fclose(fp);
     fp = fopen(filenames[8],"w");
@@ -15,51 +61,14 @@ int main(int argc, char **argv) {
     fclose(fp);
     fp = fopen(filenames[11],"w");
     fclose(fp);
-
-    mode = instruction;
-    fp = fopen(filenames[1],"r");
-    instructions = malloc(MAX_INSTRUCTIONS * sizeof(char *));
-    for(i=0; i<MAX_INSTRUCTIONS; i++) {
-        instructions[i] = malloc(INSTRUCTION_LEN * sizeof(char));
-    }
-    read_from_file(fp, INSTRUCTION_LEN, mode);
-	cmdLst = malloc(MAX_INSTRUCTIONS * sizeof(Instruction *));
-    for(i=0; i<MAX_INSTRUCTIONS; i++) {
-        cmdLst[i] = (Instruction *)malloc(sizeof(Instruction *));
-        add_to_cmd_lst(cmdLst[i], instructions[i]);
-    }
-	fclose(fp);
-
-    mode = data;
-    fp = fopen(filenames[2],"r");
-	read_from_file(fp, DATA_LEN+1, mode);
-    fclose(fp);
-
-	mode = disk;
-    diskIO = calloc(NUM_SECTORS * SECTOR_SIZE ,sizeof(int));
-    fp = fopen(filenames[3],"r");
-	read_from_file(fp, NUM_SECTORS * SECTOR_SIZE, disk);
-    fclose(fp);
-
-	mode = irq2;
-    irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
-    fp = fopen(filenames[4],"r");
-    read_from_file(fp, INSTRUCTION_LEN, mode);
-    fclose(fp);
-
-    //Init the rest of the IO devices
-    monitorFrame = calloc(MONITOR_RES * MONITOR_RES ,sizeof(int));
-    for (i=0; i<MONITOR_RES * MONITOR_RES; i++) {
-        monitorFrame[i]=0;
-    }
-    res = main_loop();
 }
 
 
-int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
+void add_to_cmd_lst(Instruction *cmdLst, char *inst) {
+    //This function cuts instruction on given spots and generates struct Instruction with required fields (op, rs, rt, etc.)
     if (inst == NULL) {
         cmdLst = NULL;
-        return 1;
+        return;
     }
 	char tmp;
     tmp = cut_string_by_index(inst, 2);	//OP
@@ -83,49 +92,49 @@ int add_to_cmd_lst(Instruction *cmdLst, char *inst) {
     inst[9]=tmp;						//imm2
     cmdLst -> immediate2 = (short)strtol(inst+9, NULL, 16);
     sign_ext(&(cmdLst -> immediate2));
-    return 1;
 }
 
 
-void update_monitor_pixels(){
-    if(IORegister[22] == 1){
-        int frame_data = IORegister[21];
-        int frame_address = IORegister[20];
-        monitorFrame[frame_address] = frame_data;
-        IORegister[22] == 0;
-    }
-}
-
-
-int main_loop() {
-    int oldPC;
+/*---------------------------------------------------------------MAINLOOP FLOW-------------------------------------------------------------*/
+void main_loop() {
+    int res, oldPC;
 	while(cmdLst[PC]){
-        //Handle disk and timer
         //Handle interrupts
         interrupt_handler();
+
+        //Handle disk, timer, irq2, monitor
         diskIO_handler();
         timer_handler();
         update_irq2(cycles);
         update_monitor_pixels();
+
         //Execute current command
         oldPC = PC; 
-        run_command(*cmdLst[PC]);
-        if(PC == oldPC) { //If PC has changed with a branch jump command - it doesn't need to be increased by 1.
+        res = run_command(*cmdLst[PC]);
+
+        //Update PC. If PC has changed with a branch jump command - it doesn't need to be increased by 1.
+        if(PC == oldPC) { 
             PC += 1;
         }
+
         //Update cycle count
         cycles+=1;
         IORegister[8] = cycles;
-    }
-    return EXIT_SUCCESS;
-}
 
-
-void update_irq2(int cycle) {
-    if (irq2Lst[irq2Index] == cycle) {
-        IORegister[5] = 1;
-        irq2Index++;
+        //Check If Finished / Crashed.
+        if (res == EXIT_SUCCESS) {
+            write_exit_txt_files();
+            fprintf(stdout, "Simulator Exited Successfully.");
+            exit(EXIT_SUCCESS);
+        }
+        if (res == EXIT_FAILURE) {
+            fprintf(stderr, "ERROR - Simulator failed.\nPC - %d\nCycle - %d\n", PC, cycles);
+            exit(EXIT_FAILURE);
+        }
     }
+    write_exit_txt_files();
+    fprintf(stderr, "ERROR - Got to the last instruction - without HALT.\nWrote out txt files - based on current state.\nPC - %d\nCycle - %d\n", PC, cycles);
+    exit(EXIT_FAILURE);
 }
 
 
@@ -156,26 +165,6 @@ void update_irqs_state(int *irqState) {
     irqState[2] = IORegister[2] & IORegister[5];
 }
 
-void read_from_disk(int* disk_sector, int* mem_buffer, int buffer){ //read from disk to mem
-    int i;
-    for(i = 0 ; i < SECTOR_SIZE ; i++){
-        mem_buffer[i] = disk_sector[i];
-        if (disk_sector[i]!=0) {
-            dataMaxIndex = get_max(dataMaxIndex, buffer+i);
-        }
-    }
-}
-
-void write_to_disk(int* disk_sector, int* mem_buffer, int sector){
-    int i;
-    for(i = 0 ; i < SECTOR_SIZE ; i++){
-        disk_sector[i] = mem_buffer[i];
-        if (mem_buffer[i]!=0) {
-            diskMaxIndex = get_max(diskMaxIndex, sector + i);
-        }
-    }
-}
-
 
 void diskIO_handler() {
     int type_of_operation, sector, buffer;
@@ -186,7 +175,10 @@ void diskIO_handler() {
         sector = IORegister[15];
         buffer = IORegister[16];
         //If fails, can't write/read disk sector to/from this address - program crashes.
-        assert(buffer<MAX_DATA-SECTOR_SIZE);
+        if(buffer<MAX_DATA-SECTOR_SIZE){
+            fprintf(stderr, "ERROR - read/write disk - Not enough space on MEM\nReading/Writing indexes - %d to %d - Memory Overflow. (Max size - 4096)\nPC - %d\nCycle - %d\n", buffer, buffer + SECTOR_SIZE, PC, cycles);
+            exit(EXIT_FAILURE);
+        }
         if(type_of_operation == 1) {//read operation...
             read_from_disk(&diskIO[sector], &MEM[buffer], buffer);
         }
@@ -217,6 +209,44 @@ void timer_handler() {
 }
 
 
+void update_irq2(int cycle) {
+    if (irq2Lst[irq2Index] == cycle) {
+        IORegister[5] = 1;
+        irq2Index++;
+    }
+}
+
+
+void update_monitor_pixels(){
+    if(IORegister[22] == 1){
+        int frame_data = IORegister[21];
+        int frame_address = IORegister[20];
+        monitorFrame[frame_address] = frame_data;
+        IORegister[22] == 0;
+    }
+}
+
+
+void write_exit_txt_files() {
+    FILE *fp;
+    fp = fopen(filenames[5],"w");
+    write_to_file(fp, REG_HEX_LEN, data);
+    fclose(fp);
+    fp = fopen(filenames[12],"w");
+    write_to_file(fp, REG_HEX_LEN, disk);
+    fclose(fp);
+    fp = fopen(filenames[6],"w");
+    write_to_file(fp, REG_HEX_LEN, registers);
+    fclose(fp);
+    fp = fopen(filenames[9],"w");
+    write_to_file(fp, REG_HEX_LEN, cycle);
+    fclose(fp);
+    fp = fopen(filenames[13],"w");
+    write_to_file(fp, 2, monitor);
+    fclose(fp);
+}
+
+
 int run_command(Instruction instruction) {
     R[1] = instruction.immediate1;
     R[2] = instruction.immediate2;
@@ -236,29 +266,12 @@ int run_command(Instruction instruction) {
         run_IOregister_operation(instruction, instruction.op);
     }
     else if(instruction.op == 21) {
-        cycles++;
-        fp = fopen(filenames[5],"w");
-        write_to_file(fp, DATA_LEN, data);
-        fclose(fp);
-        fp = fopen(filenames[12],"w");
-        write_to_file(fp, DATA_LEN, disk);
-        fclose(fp);
-        fp = fopen(filenames[6],"w");
-        write_to_file(fp, REG_HEX_LEN, registers);
-        fclose(fp);
-        fp = fopen(filenames[9],"w");
-        write_to_file(fp, REG_HEX_LEN, cycle);
-        fclose(fp);
-        fp = fopen(filenames[13],"w");
-        write_to_file(fp, 2, monitor);
-        fclose(fp);
-        
-        //make_monitor_txt_file(); // TASK - MAKE FILE FOR MONITOR OUTPUT - EACH ROW IS VALUE IN HEXA, FIRST ROW 0,0 THEN 0,1 .... 1,0 , 1,1 - INDEXES - OUR ARRAY IS FLATTENED.
-        exit(1); //determine exit message
+        return EXIT_SUCCESS;
     }
     else{
-        fprintf(stderr, "op code not recognized"); //determine message
+        return EXIT_FAILURE;
     }
+    return CONTINUE_MAINLOOP;
 }
 
 
@@ -362,7 +375,7 @@ void run_IOregister_operation(Instruction instruction , int id) {
         IORegister[R[instruction.rs]+R[instruction.rt]] = R[instruction.rm];
         if(R[instruction.rs]+R[instruction.rt] == 9){
             fp = fopen(filenames[10],"a");
-            write_to_file(fp, TXT_LEN, led);
+            write_to_file(fp, TXT_LEN, leds);
             fclose(fp);
         }
         if(R[instruction.rs]+R[instruction.rt] == 10){
@@ -373,6 +386,5 @@ void run_IOregister_operation(Instruction instruction , int id) {
     }
 
 }
-
 
 

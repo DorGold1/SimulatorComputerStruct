@@ -1,4 +1,4 @@
-#include "utils.c"
+#include "assemblerutils.c"
 
 /*---------------------------------------NOTES FOR SELF---------------------------------------
 
@@ -373,7 +373,7 @@ int main(int argc, char** argv) {
     if (fp == NULL) {printf("Failed to open asm file : %s\n", program_path); exit(EXIT_FAILURE);}
     
     //read from file into unparsed_instructions local table - sizes need further attention
-    lines_read_from_asm = read_from_file(fp, ASM_LINE_BUFFER_LEN, asmfile);
+    lines_read_from_asm = init_unparsed_instructions(fp, ASM_LINE_BUFFER_LEN);
     fclose(fp);
     free_table(unparsed_instructions, lines_read_from_asm, ASM_LINE_MAX);
     

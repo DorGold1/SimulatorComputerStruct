@@ -1,9 +1,7 @@
-#ifndef INCLUDEINIT
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#endif
 
 /*---------------------------------------------------------------Define Constants & Types----------------------------------------------------*/
 #define ASM_LINE_MAX 8192
@@ -37,6 +35,8 @@ typedef enum {
 
 char **imem_table, **dmem_table, **unparsed_instructions;
 Queue *Labels, *instructions_with_label;
+int immMask = ~(-1 + (1<<12 -1));
+
 /*---------------------------------------------------------------FUNCTIONS DECLAREATIONS------------------------------------------------------*/
 
 /*Main Flow - Functions*/
