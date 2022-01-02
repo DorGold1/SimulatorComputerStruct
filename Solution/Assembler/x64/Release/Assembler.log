@@ -1,3 +1,0 @@
-﻿  Assembler.c
-C:\Users\DorGolfaiz\Desktop\SimulatorComputerStruct\Solution\Assembler\Assembler.c(382): warning C4700: uninitialized local variable 'empty_buffer_field' used
-  Assembler.vcxproj -> C:\Users\DorGolfaiz\Desktop\SimulatorComputerStruct\Solution\Assembler\x64\Release\Assembler.exe

@@ -1,10 +1,8 @@
-.vscode/launch.json
-.vscode/settings.json
-simulator.exe
-a.exe
-.vscode/c_cpp_properties.json
-.vscode/tasks.json
-Assembler.exe
-*.txt
+.vscode
 *.exe
-fibexample_oct_20
+Solution/Simulator/.vs
+Solution/Simulator/x64
+Solution/Simulator/*.txt
+Solution/Assembler/.vs
+Solution/Assembler/x64
+Solution/Assembler/*.txt
