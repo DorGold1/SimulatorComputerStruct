@@ -6,3 +6,5 @@ a.exe
 .vscode/tasks.json
 Assembler.exe
 *.txt
+*.exe
+fibexample_oct_20
