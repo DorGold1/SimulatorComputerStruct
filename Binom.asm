@@ -31,3 +31,6 @@ bin:
 return:
 	add $v0, $imm1, $zero, $zero, 1, 0		# return 1
 	beq $zero, $zero, $zero, $ra, 0, 0		# and return
+
+.word 0x100 5
+.word 0x101 2

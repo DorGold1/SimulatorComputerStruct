@@ -35,4 +35,6 @@ colour_pixel:
 	out $zero, $imm1, $zero, $t0, 20, 0 # update pixel to be updated
 	out $zero, $imm1, $zero, $imm2, 22, 1 # write to monitor
 	beq $zero, $zero, $zero, $imm1, iterate # continue to iterate
+	
+.word 0x100 20
 
