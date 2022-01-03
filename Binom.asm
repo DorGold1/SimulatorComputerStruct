@@ -3,7 +3,7 @@
 	lw $a1, $zero, $imm2, $zero, 0, 0x101	# load k
 	add $sp, $sp, $imm2, $zero, 0, -4   	# adjust stack for 4 items
 	jal $ra $zero, $zero, $imm2, 0, bin		# calc $v0 = bin(n,k)
-	sw $a1, $zero, $imm2, $zero, 0, 0x102	# load k
+	sw $v0, $zero, $imm2, $zero, 0, 0x102	# save calc
 	halt $zero, $zero, $zero, $zero, 0, 0	# halt
 	
 bin:
