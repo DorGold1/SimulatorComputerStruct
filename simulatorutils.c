@@ -12,7 +12,6 @@ int compare (const void * a, const void * b);
 void sign_ext(int *num);
 void dec2hexa(char* result, int num, int len);
 int hexa2dec(char *hex_rep, int len);
-void dec2hexa(char* result, int num, int len);
 int write_to_file(FILE *fp, int len, Mode mode);
 void set_line_to_zero(char *line, int len);
 int write_int_arr_to_file(FILE *fp, char *line, int line_len, int *arr, int arr_len);
