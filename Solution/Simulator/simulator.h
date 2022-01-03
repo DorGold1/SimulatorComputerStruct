@@ -37,7 +37,7 @@ int IORegister[NUM_IOREGISTERS];
 char IORegNames[NUM_IOREGISTERS][NUM_IOREGISTERS] = {"irq0enable", "irq1enable", "irq2enable", "irq0status", "irq1status" , "irq2status", "irqhandler", "irqreturn", "clks" , "leds", "display7seg", "timerenable", "timercurrent", "timermax", "diskcmd", "disksector", "diskbuffer", "diskstatus", "NULL", "NULL", "monitoraddr", "monitordata", "monitorcmd"};
 char **filenames, **instructions;
 int MEM[MAX_DATA];
-int dataMaxIndex = 0, diskMaxIndex = 0, PC = 0, cycles = 0, led = 0, irq2Index = 0, inInterrupt = 0, diskCycleTimer = 0;
+int PC = 0, cycles = 0, led = 0, irq2Index = 0, inInterrupt = 0, diskCycleTimer = 0;
 int *diskIO, *monitorFrame, *irq2Lst;
 int immMask = ~(-1 + ((1)<<(12) -1));
 

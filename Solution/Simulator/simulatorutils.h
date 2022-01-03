@@ -141,9 +141,6 @@ int init_disk_lst(FILE *fp, char *line, int len) {
             continue;
         }
         add_to_data_lst(&diskIO[i], line);
-        if (diskIO[i]!=0) {
-            diskMaxIndex = i+1;
-        }
         i++;
     }
     return i;
@@ -156,12 +153,7 @@ int init_data_lst(FILE *fp, char *line, int len) {
         if (strcmp(line,"\n") == 0) {
             continue;
         }
-        add_to_data_lst(&MEM[i], line);
-        if (MEM[i]!=0) {
-            
-            dataMaxIndex = i+1;
-        }
-        i++;
+        add_to_data_lst(&MEM[i++], line);
     }
     return i;
 }
@@ -274,12 +266,12 @@ int write_to_file(FILE *fp, int len, Mode mode) {
 
 
 int write_diskout(FILE *fp, char *line, int len) {
-    return write_int_arr_to_file(fp, line, len, diskIO, diskMaxIndex);
+    return write_int_arr_to_file(fp, line, len, diskIO, SECTOR_SIZE * NUM_SECTORS);
 }
 
 
 int write_dmemout(FILE *fp, char *line, int len) {
-    return write_int_arr_to_file(fp, line, len, MEM, dataMaxIndex);
+    return write_int_arr_to_file(fp, line, len, MEM, MAX_DATA-1);
 }
 
 
@@ -384,9 +376,6 @@ void read_from_disk(int* disk_sector, int* mem_buffer, int buffer){ //read from 
     int i;
     for(i = 0 ; i < SECTOR_SIZE ; i++){
         mem_buffer[i] = disk_sector[i];
-        if (disk_sector[i]!=0) {
-            dataMaxIndex = get_max(dataMaxIndex, buffer+i);
-        }
     }
 }
 
@@ -395,9 +384,6 @@ void write_to_disk(int* disk_sector, int* mem_buffer, int sector){
     int i;
     for(i = 0 ; i < SECTOR_SIZE ; i++){
         disk_sector[i] = mem_buffer[i];
-        if (mem_buffer[i]!=0) {
-            diskMaxIndex = get_max(diskMaxIndex, sector + i);
-        }
     }
 }
 
