@@ -6,3 +6,5 @@ Solution/Simulator/*.txt
 Solution/Assembler/.vs
 Solution/Assembler/x64
 Solution/Assembler/*.txt
+*.tmp
+~$cumentation.docx

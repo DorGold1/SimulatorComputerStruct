@@ -39,6 +39,7 @@ int add_imm_to_result(char* result, char* str){
     }
     else {
         char tmp[4];
+        tmp[3] = '\0';
         for (int i=0; i< 3; i++){ tmp[i] = '0';}
         num2hexa(tmp, str, 3);
         strcat(result, tmp);
@@ -197,6 +198,7 @@ void parseLabel(char *label_name, int pc){
 void parseWord (char **line, int *dtable_last_idx){
     char *address, *data, hex_address[13], hex_data[dEntryLen+1];
     int dec_address, dec_data, data_hex_len, max_negative;
+    hex_data[dEntryLen] = '\0';
     address = line[1];
     data = line[2];
 
@@ -399,8 +401,8 @@ int main(int argc, char** argv) {
     copy_table_to_file(dmem_table, dtable_last_idx+1, dmem_file);
 
     //free tables completely
-    free_table(imem_table, 0, memSize); imem_table = NULL;
-    free_table(dmem_table, 0, memSize); dmem_table = NULL;
-    free_table(unparsed_instructions, 0, ASM_LINE_MAX); unparsed_instructions = NULL;
+    //free_table(imem_table, 0, memSize); imem_table = NULL;
+    //free_table(dmem_table, 0, memSize); dmem_table = NULL;
+    //free_table(unparsed_instructions, 0, ASM_LINE_MAX); unparsed_instructions = NULL;
     return EXIT_SUCCESS;
 }
