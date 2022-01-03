@@ -1,16 +1,25 @@
-#   program that moves disk sectors [0,7] to sectors [1,8]
-#   program will use sector 8 as tmp variable for moving each sector
+	sll $sp, $imm1, $imm2, $zero, 1, 12	    # set $sp = 1 << 12 = 4096
+	add $a0, $imm1, $zero, $zero, 7, 0      #set sector to read from     
+	add $a1, $imm1, $zero, $zero, 8, 0      #set sector to write to
+	beq $zero, $zero, $zero, $imm1, read_from_disk, 0 # make first read
 
-out $zero, $zero, $imm1, $imm2, 1, 1        # enable irq1
+read_from_disk:
+	beq $zero, $a1, $imm1, $imm2, 0, halt # finished copying everything
+	in $t0, $imm1, $zero, $zero, 17, 0 # get diskstatus
+	beq $zero, $t0, $imm2, $imm1, read_from_disk, 1 #wait for disk to be available
+	out $zero, $imm1, $zero, $a0, 15, 0 # $a0 is sector to read from.
+	out $zero, $imm1, $zero, $zero, 16, 0 # set buffer
+	out $zero, $imm1, $zero, $imm2, 14 , 1 # set disk cmd to be 1 for command to execute
+	beq $zero, $zero, $zero, $imm1, write_to_disk, 0 # go to write sector
 
+write_to_disk:
+	in $t0, $imm1, $zero, $zero, 17, 0 # get diskstatus
+	beq $zero, $t0, $imm2, $imm1, write_to_disk, 1 # wait for disk to be available
+	out $zero, $imm1, $zero, $a1, 15, 0 # set sector to write to
+	out $zero, $imm1, $zero, $imm2, 14, 2 # make write command
+	sub $a0, $a0, $imm1, $zero, 1, 0 # decrement $a0
+	sub $a1, $a1, $imm1, $zero, 1, 0 # decrement $a1
+	beq $zero, $zero, $zero, $imm1, read_from_disk, 0 # go to read sector
 
-Write_to_sector_8:
-# assuming $a0 is index of sector to copy
-# assuming $a1 is the buffer's address
-
-wait_for_free: in $t0, $imm2, $zero, $zero, 0, 17      # $t0 = disk status
-beq $zero, $t0, $imm1, $imm2, 1, wait_for_free         # $t0 = 1 --> keep waiting for disk to be free
-
-out $zero, $zero, $imm1, $a0, 15, 0                    # R[disksector] = $a0
-out $zero, $zero, $imm1, $a1, 16, 0                    # R[diskbuffer] = $a1
-
+halt:
+	halt $zero, $zero, $zero, $zero, 0, 0	# halt
