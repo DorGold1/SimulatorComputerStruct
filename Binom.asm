@@ -25,7 +25,7 @@ bin:
 	add $v0, $v0, $s0, $zero, 0, 0			# result = bin(n, k-1) + bin(n-1,k-1)
 	lw $ra, $sp, $imm2, $zero, 0, 0			# restore $ra
 	lw $s0, $sp, $imm2, $zero, 0, 3			# restore $s0
-	add $sp, $imm1, $zero, $zero, 4, 0		# restore stack pointer
+	add $sp, $sp, $imm1, $zero, 4, 0		# restore stack pointer
 	beq $zero, $zero, $zero, $ra, 0, 0		# and return
 
 return:
