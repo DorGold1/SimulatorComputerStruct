@@ -8,3 +8,4 @@ Solution/Assembler/x64
 Solution/Assembler/*.txt
 *.tmp
 ~$cumentation.docx
+Solution/Assembler/Assembler.vcxproj.user

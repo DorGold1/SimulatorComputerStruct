@@ -353,7 +353,6 @@ void run_memory_command(Instruction instruction , int id) {
     }
     else if(id == 17) {
         MEM[R[instruction.rs] + R[instruction.rt]] = R[instruction.rm] + R[instruction.rd];
-        dataMaxIndex = get_max(dataMaxIndex, R[instruction.rs] + R[instruction.rt]);
     }
 }
 

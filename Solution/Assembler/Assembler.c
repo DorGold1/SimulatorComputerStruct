@@ -208,19 +208,7 @@ void parseWord (char **line, int *dtable_last_idx){
     //getting decimal value of address
     num2hexa(hex_address, address, 12);
     dec_address = hexa2dec(hex_address, 12);
-
-    //getting hexa value of data
-    if((data_hex_len = isHexa(data)) != 0){
-        //data is hexa
-        dec_data = hexa2dec(&data[2], data_hex_len);
-        max_negative = 1<<(data_hex_len*4-1);
-            //in case data need sign extention (last bit in binary rep is set)
-        if (dec_data & max_negative) {for (int i = 0; i <dEntryLen-data_hex_len; i++) {hex_data[i] = 'F';}}
-    }
-    //data is decimal
-    else {dec_data = (int) strtol(data, NULL, 10);}
-    dec2hexa(hex_data, dec_data, dEntryLen);
-
+    num2hexa(hex_data, data, dEntryLen);
     add_line_to_table(hex_data, dec_address, 0);
     update_dtable_last_idx(dtable_last_idx, dec_address);
 }
