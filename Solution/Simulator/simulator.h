@@ -39,7 +39,7 @@ char **filenames, **instructions;
 int MEM[MAX_DATA];
 int dataMaxIndex = 0, diskMaxIndex = 0, PC = 0, cycles = 0, led = 0, irq2Index = 0, inInterrupt = 0, diskCycleTimer = 0;
 int *diskIO, *monitorFrame, *irq2Lst;
-int immMask = ~(-1 + (1<<12 -1));
+int immMask = ~(-1 + ((1)<<(12) -1));
 
 
 /*---------------------------------------------------------------FUNCTIONS DECLAREATIONS------------------------------------------------------*/

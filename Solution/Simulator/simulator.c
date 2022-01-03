@@ -1,8 +1,8 @@
-#include "simulatorutils.c"
+#include "simulatorutils.h"
+
 
 /*----------------------------------------------------------------INIT FLOW----------------------------------------------------------------*/
-int main(int argc, char **argv) {
-    
+int main(int argc, char *argv[]) {
     int i;
     FILE *fp;
     filenames = argv;
@@ -169,7 +169,7 @@ void update_irqs_state(int *irqState) {
 void diskIO_handler() {
     int type_of_operation, sector, buffer;
     type_of_operation = IORegister[14];
-    if((type_of_operation != 0) & IORegister[17] == 0) { //Disk has a command that needs to be done and he is free.
+    if((type_of_operation != 0) & (IORegister[17] == 0)) { //Disk has a command that needs to be done and he is free.
         IORegister[17] = 1;
         diskCycleTimer = 0; //INITATE TIMER
         sector = IORegister[15];
@@ -222,7 +222,7 @@ void update_monitor_pixels(){
         int frame_data = IORegister[21];
         int frame_address = IORegister[20];
         monitorFrame[frame_address] = frame_data;
-        IORegister[22] == 0;
+        IORegister[22] = 0;
     }
 }
 

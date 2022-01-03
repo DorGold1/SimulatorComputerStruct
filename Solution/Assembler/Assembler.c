@@ -1,4 +1,4 @@
-#include "assemblerutils.c"
+#include "assemblerutils.h"
 
 /*---------------------------------------NOTES FOR SELF---------------------------------------
 
