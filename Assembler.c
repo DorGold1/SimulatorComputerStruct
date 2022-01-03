@@ -227,7 +227,7 @@ void parseInstruction (char **line, int pc){
 
     char result[iEntryLen+1];
     int imm_is_label = 0;
-    
+
     //getting the parsed instruction into result
     for (int i=0; i< 7; i++) {
         if (i==0) { add_op_to_result(result, line[0]);}
@@ -356,11 +356,12 @@ void free_Queues(){
 
 int main(int argc, char** argv) {
     FILE *fp;
-    char empty_buffer_field[MAX_STR_LEN], *buffer_line[MAX_LINE_LEN], *program_path, *imem_file, *dmem_file;
+    char **buffer_line, *program_path, *imem_file, *dmem_file;
     int line_len, lines_read_from_asm, pc = 0, dtable_last_idx = 0;
     
     //Init buffers & data structures
-    for (int i = 0; i <MAX_LINE_LEN; i++) {buffer_line[i] = (char *) malloc(MAX_STR_LEN*sizeof(char));}
+    buffer_line = (char **) malloc(MAX_LINE_LEN * sizeof(char *));
+    for (int i = 0; i <MAX_LINE_LEN; i++) {buffer_line[i] = (char *) calloc(100, sizeof(char));}
     init_DS();
 
     //Verify inputs
@@ -375,20 +376,15 @@ int main(int argc, char** argv) {
     //read from file into unparsed_instructions local table - sizes need further attention
     lines_read_from_asm = init_unparsed_instructions(fp, ASM_LINE_BUFFER_LEN);
     fclose(fp);
-    free_table(unparsed_instructions, lines_read_from_asm, ASM_LINE_MAX);
     
     //parse lines and add them to local tables
     for (int i =0; i<lines_read_from_asm; i++){
-        for (int j = 0; j< MAX_LINE_LEN; j++) {memcpy(buffer_line[j], empty_buffer_field, MAX_STR_LEN*sizeof(char));}
         line_len = fix_line_for_parsing(buffer_line, unparsed_instructions[i]);
         parseLine(buffer_line, line_len, &pc, &dtable_last_idx);
     }
-    
-    //free buffers & local copy of asm file
-    free_table(buffer_line, 0, MAX_LINE_LEN);
-    free_table(unparsed_instructions, 0, lines_read_from_asm);
-    free (unparsed_instructions); unparsed_instructions = NULL;
 
+    //free buffers & local copy of asm file
+    
     //second loop
     update_labled_instructions();
     free_Queues();
@@ -397,19 +393,14 @@ int main(int argc, char** argv) {
                                             /*here: pc is larger by 1 from the last iEntry_idx because update_pc() was called by halt (function that must be called in the end of asm file)
                                               dtable_last_idx is exactly true to its name
                                               */
-    //free unused space in imem/dmem tables
-    free_table(imem_table, pc, memSize);
-    free_table(dmem_table, dtable_last_idx+1, memSize);
 
     //copy from imem_table & dmem_table to corresponding files (paths from input)
     copy_table_to_file(imem_table, pc, imem_file);
     copy_table_to_file(dmem_table, dtable_last_idx+1, dmem_file);
 
     //free tables completely
-    free_table(imem_table, 0, pc);
-    free_table(dmem_table, 0, dtable_last_idx+1);
-    free(imem_table); imem_table = NULL;
-    free(dmem_table); dmem_table = NULL;
-
+    free_table(imem_table, 0, memSize); imem_table = NULL;
+    free_table(dmem_table, 0, memSize); dmem_table = NULL;
+    free_table(unparsed_instructions, 0, ASM_LINE_MAX); unparsed_instructions = NULL;
     return EXIT_SUCCESS;
 }
