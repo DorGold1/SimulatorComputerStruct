@@ -1,7 +1,7 @@
 #include "simulator.h"
 
 /*--------------------------------------------------Define Enum for reading / writing----------------------------------------------------*/
-typedef enum {data, instruction, irq2, disk, registers, trace, asmfile, hwregtrace, leds, sevenseg, cycle, monitor} Mode;
+typedef enum {data, instruction, irq2, disk, registers, trace, asmfile, hwregtrace, leds, sevenseg, cycle, monitor, monitoryuv} Mode;
 
 
 /*------------------------------------------------------UTILS FUNC DECLARATIONS----------------------------------------------------------*/
@@ -39,6 +39,7 @@ int write_hwregtrace(FILE *fp, char *line, int len);
 int write_led_7seg(FILE *fp, char *line, int len, int IORegIndex);
 int write_cycle(FILE *fp, char *line, int len);
 int write_monitor(FILE *fp, char *line, int len);
+int write_monitoryuv(FILE* fp);
 void write_to_disk(int* disk_sector, int* mem_buffer, int sector);
 
 
@@ -259,12 +260,20 @@ int write_to_file(FILE *fp, int len, Mode mode) {
         case (monitor):
             res = write_monitor(fp, line, len);
             break;
+        case (monitoryuv):
+            res = write_monitoryuv(fp);
     }
     free(line);
     return res;
 }
 
-
+int write_monitoryuv(FILE* fp) {
+    unsigned char* monitor_uc = malloc(sizeof(unsigned char) * MONITOR_RES * MONITOR_RES);
+    for (int i = 0; i < MONITOR_RES * MONITOR_RES; i++) {
+        monitor_uc[i] = (unsigned char)monitorFrame[i];
+    }
+    fwrite(monitor_uc, 1, MONITOR_RES * MONITOR_RES, fp);
+}
 int write_diskout(FILE *fp, char *line, int len) {
     return write_int_arr_to_file(fp, line, len, diskIO, SECTOR_SIZE * NUM_SECTORS);
 }

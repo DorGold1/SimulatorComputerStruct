@@ -9,3 +9,8 @@ Solution/Assembler/*.txt
 *.tmp
 ~$cumentation.docx
 Solution/Assembler/Assembler.vcxproj.user
+binom
+circle
+disktest
+fib
+mulmat

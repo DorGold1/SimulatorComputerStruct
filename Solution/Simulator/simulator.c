@@ -30,13 +30,17 @@ int main(int argc, char *argv[]) {
 
     //Reading disk Flow
     diskIO = calloc(NUM_SECTORS * SECTOR_SIZE ,sizeof(int));
-    fp = fopen(filenames[3],"r");
+    if ((fp = fopen(filenames[3], "r")) == NULL) {
+        fp = fopen(filenames[3], "w");
+    }
 	read_from_file(fp, NUM_SECTORS * SECTOR_SIZE, disk);
     fclose(fp);
 
     //Reading irq2 Flow
     irq2Lst = calloc(MAX_INSTRUCTIONS, sizeof(int));
-    fp = fopen(filenames[4],"r");
+    if ((fp = fopen(filenames[4], "r")) == NULL) {
+        fp = fopen(filenames[4], "w");
+    }
     read_from_file(fp, INSTRUCTION_LEN, irq2);
     fclose(fp);
 
@@ -175,15 +179,15 @@ void diskIO_handler() {
         sector = IORegister[15];
         buffer = IORegister[16];
         //If fails, can't write/read disk sector to/from this address - program crashes.
-        if(buffer<MAX_DATA-SECTOR_SIZE){
+        if(buffer>MAX_DATA-SECTOR_SIZE){
             fprintf(stderr, "ERROR - read/write disk - Not enough space on MEM\nReading/Writing indexes - %d to %d - Memory Overflow. (Max size - 4096)\nPC - %d\nCycle - %d\n", buffer, buffer + SECTOR_SIZE, PC, cycles);
             exit(EXIT_FAILURE);
         }
         if(type_of_operation == 1) {//read operation...
-            read_from_disk(&diskIO[sector], &MEM[buffer], buffer);
+            read_from_disk(&diskIO[sector * SECTOR_SIZE], &MEM[buffer], buffer);
         }
         else{//write operation...
-            write_to_disk(&diskIO[sector], &MEM[buffer], sector);
+            write_to_disk(&diskIO[sector * SECTOR_SIZE], &MEM[buffer], sector);
         }
     }
     else if(IORegister[17] == 1){//disk is not free.
@@ -243,6 +247,9 @@ void write_exit_txt_files() {
     fclose(fp);
     fp = fopen(filenames[13],"w");
     write_to_file(fp, 2, monitor);
+    fclose(fp);
+    fp = fopen(filenames[14],"wb");
+    write_to_file(fp, 2, monitoryuv);
     fclose(fp);
 }
 
